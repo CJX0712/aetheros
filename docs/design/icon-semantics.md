@@ -186,7 +186,7 @@
 | `resource.power` | `IconBolt` | — |
 | `resource.thermal` | `IconTemperature` | — |
 | `resource.queue` | `IconListOrdered` | — |
-| `resource.offline` | `IconServer` | — |
+| `resource.offline` | `IconCloudOff` | — |
 | `file.document` | `IconFileText` | — |
 | `file.diff` | `IconFileDiff` | — |
 | `file.verified` | `IconShieldCheck` | — |
