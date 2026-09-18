@@ -11,14 +11,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # pnpm 版本单一来源 = package.json 的 packageManager（pnpm@9.15.9）。
+      # 不要在这里再写 version:，否则 pnpm/action-setup 会报
+      # "Multiple versions of pnpm specified" 并直接失败（ERR_PNPM_BAD_PM_VERSION）。
       - uses: pnpm/action-setup@v4
-        with:
-          version: 12
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: pnpm
-      - run: pnpm install --frozen-lockfile=false
+      # 锁文件已入库，CI 必须严格按锁文件安装（漂移即红灯）。
+      - run: pnpm install --frozen-lockfile
       # P0 policy gate: no emoji / AI-template icons / purple-pink gradient /
       # hardcoded colors / bounce easing / oversized files.
       - run: pnpm lint:policy
