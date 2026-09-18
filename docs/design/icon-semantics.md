@@ -71,6 +71,7 @@
 | `evidence.unverified` | 待核验（证据不完整） | default | Unverified | 配 `--aos-unverified`（规则二） |
 | `evidence.refused` | 已拒答（闸门拦截） | default, active | Refused — no evidence | strict 模式拦截时使用 |
 | `evidence.failed` | 无据 | default, active | No source | 配 `--aos-failed` |
+| `evidence.error` | 系统错误 | default, active | Error | 系统级异常（OOM / 索引损坏 / 崩溃）；与 failed 互斥，配 `--aos-error` |
 | `evidence.locate` | 定位到原文 | default | Locate in source | |
 | `evidence.provenance` | 溯源 / 指纹 | default | Provenance | |
 | `evidence.immuatable` | 只追加日志 | default | Append-only log | |
@@ -161,8 +162,9 @@
 | `evidence.quote` | `IconQuote` | `IconQuoteFilled` |
 | `evidence.verified` | `IconCircleCheck` | `IconCircleCheckFilled` |
 | `evidence.unverified` | `IconCircleDashed` | — |
-| `evidence.refused` | `IconShieldCheck` | — |
+| `evidence.refused` | `IconShieldLock` | — |
 | `evidence.failed` | `IconCircleX` | `IconCircleXFilled` |
+| `evidence.error` | `IconAlertOctagon` | — |
 | `evidence.locate` | `IconTarget` | — |
 | `evidence.provenance` | `IconFingerprint` | — |
 | `evidence.immuatable` | `IconLock` | — |
