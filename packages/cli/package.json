@@ -1,0 +1,35 @@
+{
+  "name": "@aetheros/cli",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "agentos - command line entry point for the aetheros local agent runtime.",
+  "license": "MIT",
+  "bin": {
+    "agentos": "./dist/index.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "bench": "node dist/index.js bench"
+  },
+  "dependencies": {
+    "@aetheros/core": "workspace:*"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  }
+}

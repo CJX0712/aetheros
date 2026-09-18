@@ -1,0 +1,1639 @@
+openapi: 3.0.3
+info:
+  title: aetheros API
+  version: 1.0.0
+  summary: 本地优先、可验证的智能体运行时控制面
+  description: |
+    aetheros 控制面 API。全部数据落本机 SQLite，默认零出站请求（AC-01）。
+
+    契约地位：
+    - 本文件是 `docs/SPEC.md` §5 的展开真源，前端据此生成 TS 类型，后端据此实现。
+    - 0.x 阶段**不提供 API 稳定承诺**（SPEC §3 明确不做）。
+
+    统一约定：
+    - 所有响应包在 `{ code, data, message }` 信封内，`code = 0` 为成功。
+    - 分页响应统一为 `{ items, total, page, limit, hasMore }`。
+    - 时间字段一律 ISO-8601 UTC 字符串。
+    - 出站请求计数写入每一条 trace；`outbound` 指非回环地址请求。
+  license:
+    name: Apache-2.0
+
+servers:
+  - url: http://127.0.0.1:{port}/api/v1
+    description: 本机控制面（端口回退序列 8765 / 8801 / 9000，见 AC-14）
+    variables:
+      port:
+        default: '8765'
+        enum: ['8765', '8801', '9000']
+
+tags:
+  - name: health
+    description: 存活与就绪
+  - name: config
+    description: 配置读写（含 evidence.mode）
+  - name: runs
+    description: 智能体运行生命周期
+  - name: traces
+    description: trace 与 span（只追加，哈希链防篡改）
+  - name: evidence
+    description: 检索、断言与证据链
+  - name: documents
+    description: 语料入库
+  - name: skills
+    description: 自进化技能包
+  - name: models
+    description: 本机模型资源与生命周期
+  - name: mcp
+    description: MCP server / client 双向
+  - name: net
+    description: 出站请求计数与明细（AC-01）
+  - name: audit
+    description: 审计包导出
+
+paths:
+
+  # ---------------------------------------------------------------- health
+  /health:
+    get:
+      tags: [health]
+      operationId: getHealth
+      summary: 健康检查
+      description: 返回进程状态、存储状态与零出站基线校验结果。
+      responses:
+        '200':
+          description: 服务健康
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Health'
+
+  # ---------------------------------------------------------------- config
+  /config:
+    get:
+      tags: [config]
+      operationId: getConfig
+      summary: 读取当前配置
+      responses:
+        '200':
+          description: 配置列表
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Setting'
+    patch:
+      tags: [config]
+      operationId: patchConfig
+      summary: 修改配置
+      description: |
+        `evidence.mode` 只能经此端点显式设为 `lenient`（AC-12）。
+        一旦为 `lenient`，UI 与每条 trace 必须永久标记当前模式，不可关闭不可隐藏。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                key:
+                  type: string
+                  enum:
+                    - evidence.mode
+                    - retrieval.fusion_weight
+                    - runtime.threads
+                    - telemetry.otlp_endpoint
+                value:
+                  description: JSON 编码的值
+      responses:
+        '200':
+          description: 已更新
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Setting'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  # ---------------------------------------------------------------- runs
+  /runs:
+    get:
+      tags: [runs]
+      operationId: listRuns
+      summary: 运行列表
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [running, completed, aborted, failed]
+      responses:
+        '200':
+          description: 分页列表
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        allOf:
+                          - $ref: '#/components/schemas/Page'
+                          - type: object
+                            properties:
+                              items:
+                                type: array
+                                items:
+                                  $ref: '#/components/schemas/Run'
+    post:
+      tags: [runs]
+      operationId: createRun
+      summary: 发起一次运行
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [prompt]
+              properties:
+                prompt:
+                  type: string
+                modelId:
+                  type: string
+                evidenceMode:
+                  type: string
+                  enum: [strict, lenient]
+                  default: strict
+                maxLoops:
+                  type: integer
+                  minimum: 1
+                  maximum: 64
+                  default: 12
+      responses:
+        '201':
+          description: 已创建
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Run'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /runs/{runId}:
+    parameters:
+      - $ref: '#/components/parameters/RunId'
+    get:
+      tags: [runs]
+      operationId: getRun
+      summary: 运行详情
+      responses:
+        '200':
+          description: 运行详情
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Run'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [runs]
+      operationId: deleteRun
+      summary: 删除运行（受留存策略约束）
+      description: |
+        AC-13 要求 trace 与审计记录保留 ≥ 180 天。未过 `retainUntil` 的运行返回 409。
+      responses:
+        '204':
+          description: 已删除
+        '409':
+          description: 仍在留存期内
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /runs/{runId}/abort:
+    parameters:
+      - $ref: '#/components/parameters/RunId'
+    post:
+      tags: [runs]
+      operationId: abortRun
+      summary: 中止运行
+      responses:
+        '200':
+          description: 已中止
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Run'
+        '409':
+          description: 运行已结束，无法中止
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+
+  /runs/{runId}/spans:
+    parameters:
+      - $ref: '#/components/parameters/RunId'
+    get:
+      tags: [traces]
+      operationId: listRunSpans
+      summary: 运行的 span 列表
+      description: 支持按 `reactLoopIndex` 过滤 —— ReAct 轮次是 UI 的分组单位。
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+        - name: reactLoopIndex
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+        - name: kind
+          in: query
+          schema:
+            type: string
+            enum: [run, llm, tool, retrieve, gate, evolve, net]
+      responses:
+        '200':
+          description: 分页列表
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        allOf:
+                          - $ref: '#/components/schemas/Page'
+                          - type: object
+                            properties:
+                              items:
+                                type: array
+                                items:
+                                  $ref: '#/components/schemas/Span'
+
+  /runs/{runId}/claims:
+    parameters:
+      - $ref: '#/components/parameters/RunId'
+    get:
+      tags: [evidence]
+      operationId: listRunClaims
+      summary: 运行的断言列表
+      description: |
+        每条断言携带 `evidenceChunkIds`，其 null 语义区分两种情形：
+        - `null` —— 系统未产出证据（未检索 / 生成失败）→ UI 渲染「无证据」告警态
+        - `[]` —— 检索执行但零命中 → UI 渲染「检索为空」态
+        二者不可合并，合并会丢失「我明确找不到依据」这一最有价值的信号。
+      responses:
+        '200':
+          description: 断言列表
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Claim'
+
+  # ---------------------------------------------------------------- traces
+  /traces/{traceId}:
+    parameters:
+      - name: traceId
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [traces]
+      operationId: getTrace
+      summary: trace 详情（含哈希链校验状态）
+      responses:
+        '200':
+          description: trace 详情
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Trace'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /traces/{traceId}/spans:
+    parameters:
+      - name: traceId
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [traces]
+      operationId: listTraceSpans
+      summary: trace 下全部 span
+      responses:
+        '200':
+          description: span 列表
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Span'
+
+  /traces/{traceId}/verify:
+    parameters:
+      - name: traceId
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      tags: [traces]
+      operationId: verifyTraceChain
+      summary: 校验哈希链
+      description: 逐行重算哈希链；任一行不符即抛出 `tamper-detected`（AC-10）。
+      responses:
+        '200':
+          description: 校验结果
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ChainVerification'
+
+  /spans/{spanId}:
+    parameters:
+      - name: spanId
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [traces]
+      operationId: getSpan
+      summary: span 详情
+      responses:
+        '200':
+          description: span 详情
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Span'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ---------------------------------------------------------------- evidence
+  /retrieval/query:
+    post:
+      tags: [evidence]
+      operationId: queryRetrieval
+      summary: 执行检索（三路信号二次融合）
+      description: |
+        流程：FTS5 BM25 → dense cosine → RRF 得首阶段冠军 → rerank →
+        二次融合 `score = (1-w)*rrf + w*rerank`，`w = 0.5`（AC-06）。
+
+        对抗性不变量（AC-07）：注入全倒序 reranker，top-1 仍必须是首阶段融合冠军；
+        `w` 必须严格 `< 1`。reranker 不可用时降级为中性分数并透传首阶段排序，不抛异常（AC-08）。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [query]
+              properties:
+                query:
+                  type: string
+                  minLength: 1
+                topK:
+                  type: integer
+                  minimum: 1
+                  maximum: 100
+                  default: 10
+                retrievers:
+                  type: array
+                  items:
+                    type: string
+                    enum: [fts5, dense, rerank]
+                  default: [fts5, dense, rerank]
+                fusionWeight:
+                  type: number
+                  minimum: 0
+                  maximum: 1
+                  exclusiveMaximum: true
+                  default: 0.5
+                  description: |
+                    二次融合权重 w（AC-06）。必须严格 < 1：
+                    w = 1 时冠亚军差值恒为 0，对抗性测试退化为平局（AC-07）。
+      responses:
+        '200':
+          description: 检索结果
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          degraded:
+                            type: boolean
+                            description: true 表示 reranker 不可用已降级（AC-08）
+                          items:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/RetrievedChunk'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /evidence/{evidenceId}:
+    parameters:
+      - name: evidenceId
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [evidence]
+      operationId: getEvidence
+      summary: 证据条目详情
+      responses:
+        '200':
+          description: 证据详情
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Evidence'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /evidence/verify:
+    post:
+      tags: [evidence]
+      operationId: verifyEvidence
+      summary: 校验断言的证据链
+      description: |
+        判定顺序（SPEC §8.1，五态互斥）：
+        1. 无 chunk 绑定 → `unverified`（strict 模式下运行期已由 Evidence Gate 拦截为 `refused`）
+        2. 有绑定但内容哈希与入库时不一致 → `failed`，文案「内容哈希与入库时不一致，该来源已变更，证据链不可信」
+        3. 有绑定且哈希一致 → `verified`
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [claimId]
+              properties:
+                claimId:
+                  type: string
+                chunkIds:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: 校验结果
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Claim'
+
+  # ---------------------------------------------------------------- documents
+  /documents:
+    get:
+      tags: [documents]
+      operationId: listDocuments
+      summary: 文档列表
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: 分页列表
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        allOf:
+                          - $ref: '#/components/schemas/Page'
+                          - type: object
+                            properties:
+                              items:
+                                type: array
+                                items:
+                                  $ref: '#/components/schemas/Document'
+    post:
+      tags: [documents]
+      operationId: ingestDocument
+      summary: 语料入库
+      description: |
+        入库时对每个 chunk 同时记录 `byteStart/byteEnd`（权威地址）与
+        `utf16Start/utf16End`（渲染用）。不变式：
+        `decode(bytes)[utf16Start:utf16End] === chunkText`（ADR-011）。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [sourcePath]
+              properties:
+                sourcePath:
+                  type: string
+                mime:
+                  type: string
+      responses:
+        '202':
+          description: 已受理，异步入库
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Document'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /documents/{documentId}:
+    parameters:
+      - name: documentId
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [documents]
+      operationId: getDocument
+      summary: 文档详情
+      responses:
+        '200':
+          description: 文档详情
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Document'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [documents]
+      operationId: deleteDocument
+      summary: 删除文档及其 chunk
+      responses:
+        '204':
+          description: 已删除
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ---------------------------------------------------------------- skills
+  /skills:
+    get:
+      tags: [skills]
+      operationId: listSkills
+      summary: 技能列表
+      responses:
+        '200':
+          description: 技能列表
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Skill'
+    post:
+      tags: [skills]
+      operationId: createSkill
+      summary: 创建技能（导入 .skill.json）
+      responses:
+        '201':
+          description: 已创建
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Skill'
+
+  /skills/{skillId}:
+    parameters:
+      - name: skillId
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [skills]
+      operationId: getSkill
+      summary: 技能详情
+      responses:
+        '200':
+          description: 技能详情
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Skill'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /skills/{skillId}/versions:
+    parameters:
+      - name: skillId
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [skills]
+      operationId: listSkillVersions
+      summary: 技能版本血缘
+      responses:
+        '200':
+          description: 版本列表
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/SkillVersion'
+
+  /skills/{skillId}/distill:
+    parameters:
+      - name: skillId
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      tags: [skills]
+      operationId: distillSkill
+      summary: 从 run 蒸馏新版本并跑对照组
+      description: 对照组必须 `temperature = 0` + 固定 seed + 多次投票，否则基线不可比（ADR-012）。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [runId]
+              properties:
+                runId:
+                  type: string
+                seed:
+                  type: integer
+                adoptOnPass:
+                  type: boolean
+                  default: true
+      responses:
+        '202':
+          description: 已受理，异步蒸馏
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/SkillVersion'
+
+  # ---------------------------------------------------------------- models
+  /models:
+    get:
+      tags: [models]
+      operationId: listModels
+      summary: 模型资源列表
+      responses:
+        '200':
+          description: 模型列表
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Model'
+
+  /models/{modelId}/load:
+    parameters:
+      - name: modelId
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      tags: [models]
+      operationId: loadModel
+      summary: 加载模型
+      description: |
+        线程数由 `autoThreads()` 决定并夹到 [2, 4]（AC-02）。
+        加载器语义：仅「文件存在但加载失败」才锁定永久失败；文件不存在保持可重试（AC-14）。
+      responses:
+        '202':
+          description: 加载中
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Model'
+        '409':
+          description: 内存不足或已被永久锁定为失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+
+  /models/{modelId}/unload:
+    parameters:
+      - name: modelId
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      tags: [models]
+      operationId: unloadModel
+      summary: 卸载模型
+      description: 7B 与 embedding 模型不可在 8GB 机同驻，需显式卸载换入。
+      responses:
+        '200':
+          description: 已卸载
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Model'
+
+  # ---------------------------------------------------------------- mcp
+  /mcp/servers:
+    get:
+      tags: [mcp]
+      operationId: listMcpServers
+      summary: MCP server 连接列表
+      responses:
+        '200':
+          description: 连接列表
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/McpServer'
+    post:
+      tags: [mcp]
+      operationId: connectMcpServer
+      summary: 连接 MCP server
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [transport]
+              properties:
+                name:
+                  type: string
+                transport:
+                  type: string
+                  enum: [stdio, http]
+                command:
+                  type: string
+                  description: stdio 传输下的可执行命令
+                args:
+                  type: array
+                  items:
+                    type: string
+                url:
+                  type: string
+                  description: http 传输下的端点
+                tokenBudget:
+                  type: integer
+                  description: token 预算护栏上限
+      responses:
+        '201':
+          description: 已连接
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/McpServer'
+
+  /mcp/servers/{serverId}:
+    parameters:
+      - name: serverId
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [mcp]
+      operationId: getMcpServer
+      summary: MCP server 详情
+      responses:
+        '200':
+          description: server 详情
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/McpServer'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [mcp]
+      operationId: disconnectMcpServer
+      summary: 断开 MCP server
+      responses:
+        '204':
+          description: 已断开
+
+  /mcp/tools:
+    get:
+      tags: [mcp]
+      operationId: listMcpTools
+      summary: 已注册工具列表（含 aetheros 自身暴露的工具）
+      responses:
+        '200':
+          description: 工具列表
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/McpTool'
+
+  /mcp/tools/call:
+    post:
+      tags: [mcp]
+      operationId: callMcpTool
+      summary: 调用工具
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                arguments:
+                  type: object
+      responses:
+        '200':
+          description: 调用结果
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          content:
+                            type: array
+                            items:
+                              type: object
+                          structuredContent:
+                            type: object
+                          isError:
+                            type: boolean
+
+  # ---------------------------------------------------------------- net
+  /net/outbound:
+    get:
+      tags: [net]
+      operationId: getOutbound
+      summary: 出站请求计数与明细
+      description: |
+        AC-01 的机器证据。默认 `0`。口径：出站 = 非回环地址
+        （非 `127.0.0.0/8`、`::1`、`localhost`）；回环调用单独记为 `loopbackCount`。
+        全部出站必须经单一 `net` 模块，任何模块不得自行发起请求绕过计数。
+      parameters:
+        - name: runId
+          in: query
+          schema:
+            type: string
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: 计数与明细
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          outboundCount:
+                            type: integer
+                            minimum: 0
+                          loopbackCount:
+                            type: integer
+                            minimum: 0
+                          items:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/OutboundRequest'
+
+  # ---------------------------------------------------------------- audit
+  /audit/export:
+    post:
+      tags: [audit]
+      operationId: exportAuditBundle
+      summary: 导出审计包
+      description: 含 trace、span、证据链、出站明细与哈希链校验结果。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                runIds:
+                  type: array
+                  items:
+                    type: string
+                since:
+                  type: string
+                  format: date-time
+                until:
+                  type: string
+                  format: date-time
+      responses:
+        '200':
+          description: 审计包（JSON）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/AuditBundle'
+
+components:
+
+  parameters:
+    Page:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    Limit:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 200
+        default: 20
+    RunId:
+      name: runId
+      in: path
+      required: true
+      schema:
+        type: string
+
+  responses:
+    NotFound:
+      description: 资源不存在
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Envelope'
+    ValidationError:
+      description: 参数校验失败（Zod）
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/Envelope'
+              - type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ValidationIssueList'
+
+  schemas:
+
+    Envelope:
+      type: object
+      required: [code, data, message]
+      properties:
+        code:
+          type: integer
+          description: 0 表示成功，非 0 为错误码
+        data: {}
+        message:
+          type: string
+          description: 错误时的人类可读描述，成功时为空字符串
+
+    Page:
+      type: object
+      required: [items, total, page, limit, hasMore]
+      properties:
+        items:
+          type: array
+          items: {}
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+        hasMore:
+          type: boolean
+
+    ValidationIssueList:
+      type: object
+      properties:
+        issues:
+          type: array
+          items:
+            type: object
+            properties:
+              path:
+                type: string
+              message:
+                type: string
+
+    Health:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [ok, degraded, error]
+        version:
+          type: string
+        storage:
+          type: string
+          enum: [ok, error]
+        outboundCount:
+          type: integer
+          description: 进程启动至今的出站请求数，零出站基线应为 0
+        modelsLoaded:
+          type: integer
+
+    Setting:
+      type: object
+      properties:
+        key:
+          type: string
+        value: {}
+        isDefault:
+          type: boolean
+        updatedAt:
+          type: string
+          format: date-time
+
+    Run:
+      type: object
+      properties:
+        id:
+          type: string
+        sessionId:
+          type: string
+        status:
+          type: string
+          enum: [running, completed, aborted, failed]
+        evidenceMode:
+          type: string
+          enum: [strict, lenient]
+        modelId:
+          type: string
+          nullable: true
+        threads:
+          type: integer
+          nullable: true
+          description: autoThreads() 结果，夹到 [2, 4]
+        outboundCount:
+          type: integer
+          minimum: 0
+        loopbackCount:
+          type: integer
+          minimum: 0
+        startedAt:
+          type: string
+          format: date-time
+        endedAt:
+          type: string
+          format: date-time
+          nullable: true
+        retainUntil:
+          type: string
+          format: date-time
+          description: startedAt + 180 天（AC-13）
+
+    Span:
+      type: object
+      properties:
+        id:
+          type: string
+        runId:
+          type: string
+        parentSpanId:
+          type: string
+          nullable: true
+        traceId:
+          type: string
+        name:
+          type: string
+        kind:
+          type: string
+          enum: [run, llm, tool, retrieve, gate, evolve, net]
+        reactLoopIndex:
+          type: integer
+          nullable: true
+          description: ReAct 轮次，UI 的分组单位
+        status:
+          type: string
+          enum: [ok, error, refused]
+        startedAt:
+          type: string
+          format: date-time
+        endedAt:
+          type: string
+          format: date-time
+          nullable: true
+        durationMs:
+          type: integer
+          nullable: true
+        attributes:
+          type: object
+          additionalProperties: true
+        outboundCount:
+          type: integer
+          minimum: 0
+          description: 出站计数写入每一条 trace
+
+    Trace:
+      type: object
+      properties:
+        traceId:
+          type: string
+        runId:
+          type: string
+        spanCount:
+          type: integer
+        evidenceMode:
+          type: string
+          enum: [strict, lenient]
+        outboundCount:
+          type: integer
+        chainHead:
+          type: string
+          description: 哈希链末行 hash
+
+    ChainVerification:
+      type: object
+      properties:
+        valid:
+          type: boolean
+        checkedRows:
+          type: integer
+        firstBadSeq:
+          type: integer
+          nullable: true
+        error:
+          type: string
+          nullable: true
+          description: 篡改时固定为 tamper-detected
+
+    Claim:
+      type: object
+      properties:
+        id:
+          type: string
+        runId:
+          type: string
+        spanId:
+          type: string
+          nullable: true
+        ordinal:
+          type: integer
+        text:
+          type: string
+        status:
+          type: string
+          enum: [verified, unverified, refused, failed, error]
+        gateMode:
+          type: string
+          enum: [strict, lenient]
+        reason:
+          type: string
+          nullable: true
+        evidenceChunkIds:
+          type: array
+          items:
+            type: string
+          nullable: true
+          description: |
+            null = 系统未产出证据（未检索 / 生成失败）；
+            空数组 = 检索执行但零命中。二者语义不同，不可合并。
+        createdAt:
+          type: string
+          format: date-time
+
+    Evidence:
+      type: object
+      properties:
+        id:
+          type: string
+        claimId:
+          type: string
+          nullable: true
+        runId:
+          type: string
+        chunkId:
+          type: string
+          nullable: true
+        retriever:
+          type: string
+          enum: [fts5, dense, rerank, fusion]
+        score:
+          type: number
+          nullable: true
+        rrfScore:
+          type: number
+          nullable: true
+        rerankScore:
+          type: number
+          nullable: true
+        byteStart:
+          type: integer
+          nullable: true
+        byteEnd:
+          type: integer
+          nullable: true
+        utf16Start:
+          type: integer
+          nullable: true
+        utf16End:
+          type: integer
+          nullable: true
+        contentHashAtIndex:
+          type: string
+          nullable: true
+        contentHashNow:
+          type: string
+          nullable: true
+        hashMatches:
+          type: boolean
+          nullable: true
+
+    RetrievedChunk:
+      type: object
+      properties:
+        chunkId:
+          type: string
+        documentId:
+          type: string
+        sourcePath:
+          type: string
+        text:
+          type: string
+        score:
+          type: number
+        retriever:
+          type: string
+          enum: [fts5, dense, rerank, fusion]
+        byteStart:
+          type: integer
+        byteEnd:
+          type: integer
+        utf16Start:
+          type: integer
+        utf16End:
+          type: integer
+        contentHash:
+          type: string
+
+    Document:
+      type: object
+      properties:
+        id:
+          type: string
+        sourcePath:
+          type: string
+        documentHash:
+          type: string
+        byteSize:
+          type: integer
+        mime:
+          type: string
+          nullable: true
+        chunkCount:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+
+    Skill:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        currentVersion:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+
+    SkillVersion:
+      type: object
+      properties:
+        id:
+          type: string
+        skillId:
+          type: string
+        version:
+          type: integer
+        manifest:
+          type: object
+          additionalProperties: true
+        parentId:
+          type: string
+          nullable: true
+        baselineSeed:
+          type: integer
+        baselineTemp:
+          type: number
+        metric:
+          type: object
+          additionalProperties: true
+          nullable: true
+        adopted:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+
+    Model:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        kind:
+          type: string
+          enum: [llm, embedding, reranker]
+        backend:
+          type: string
+          enum: [node-llama-cpp, ollama]
+        filePath:
+          type: string
+          nullable: true
+        fileSha256:
+          type: string
+          nullable: true
+        quant:
+          type: string
+          nullable: true
+        paramCountB:
+          type: number
+          nullable: true
+        residentMb:
+          type: integer
+          nullable: true
+        ctxLimit:
+          type: integer
+          nullable: true
+        threads:
+          type: integer
+          nullable: true
+        loadState:
+          type: string
+          enum: [unloaded, loading, loaded, failed]
+        loadFailedPermanent:
+          type: boolean
+
+    McpServer:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        transport:
+          type: string
+          enum: [stdio, http]
+        status:
+          type: string
+          enum: [connected, connecting, disconnected, error]
+        toolCount:
+          type: integer
+        tokenBudget:
+          type: integer
+          nullable: true
+        tokenUsed:
+          type: integer
+
+    McpTool:
+      type: object
+      properties:
+        name:
+          type: string
+        serverId:
+          type: string
+          nullable: true
+          description: null 表示 aetheros 自身作为 MCP server 暴露的工具
+        description:
+          type: string
+        inputSchema:
+          type: object
+          additionalProperties: true
+
+    OutboundRequest:
+      type: object
+      properties:
+        id:
+          type: string
+        runId:
+          type: string
+          nullable: true
+        spanId:
+          type: string
+          nullable: true
+        host:
+          type: string
+        direction:
+          type: string
+          enum: [outbound, loopback]
+        reason:
+          type: string
+        ts:
+          type: string
+          format: date-time
+
+    AuditBundle:
+      type: object
+      properties:
+        generatedAt:
+          type: string
+          format: date-time
+        runs:
+          type: array
+          items:
+            $ref: '#/components/schemas/Run'
+        spans:
+          type: array
+          items:
+            $ref: '#/components/schemas/Span'
+        claims:
+          type: array
+          items:
+            $ref: '#/components/schemas/Claim'
+        evidence:
+          type: array
+          items:
+            $ref: '#/components/schemas/Evidence'
+        outboundRequests:
+          type: array
+          items:
+            $ref: '#/components/schemas/OutboundRequest'
+        chainVerification:
+          $ref: '#/components/schemas/ChainVerification'

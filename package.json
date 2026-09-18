@@ -1,0 +1,36 @@
+{
+  "name": "aetheros",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Local-first agent runtime that refuses unsourced claims by default and turns every failure into the next skill.",
+  "license": "MIT",
+  "packageManager": "pnpm@12.4.2",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "pnpm --filter @aetheros/core run build && pnpm --filter @aetheros/cli run build",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "test:offline": "node --import ./scripts/offline-guard.mjs ./node_modules/vitest/vitest.mjs run",
+    "bench": "pnpm --filter @aetheros/cli run bench",
+    "lint": "pnpm lint:policy && pnpm lint:css && pnpm check:icons && pnpm check:fonts",
+    "lint:policy": "node scripts/check-policy.mjs",
+    "lint:css": "stylelint \"packages/**/*.css\"",
+    "check:icons": "node scripts/check-icons.mjs",
+    "check:fonts": "node scripts/check-fonts-license.mjs",
+    "verify:demo": "node scripts/verify-demo.mjs",
+    "verify": "pnpm lint && pnpm typecheck && pnpm build && pnpm test:offline && pnpm verify:demo"
+  },
+  "devDependencies": {
+    "@tabler/icons": "3.46.0",
+    "@types/node": "^22.10.0",
+    "stylelint": "^16.11.0",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.8"
+  }
+}

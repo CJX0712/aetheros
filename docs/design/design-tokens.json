@@ -1,0 +1,562 @@
+{
+  "$schema": "https://tr.designtokens.org/format/",
+  "$description": "AetherOS design tokens. Three layers: primitive -> semantic -> component. CSS custom-property prefix: --aos-. Primitive values are internal only and MUST NOT be referenced directly by UI code; UI references semantic and component layers exclusively.",
+  "$extensions": {
+    "aos.meta": {
+      "name": "AetherOS Design Tokens",
+      "version": "0.2.0",
+      "product": "AetherOS — unified local-first agent operating system",
+      "register": "product",
+      "platform": "web",
+      "defaultTheme": "dark",
+      "cssPrefix": "--aos-",
+      "iconLibrary": "tabler-icons",
+      "iconVersion": "3.46.0",
+      "iconLicense": "MIT",
+      "iconCount": 6184,
+      "iconCounts": {
+        "outline": 5130,
+        "filled": 1054
+      },
+      "axes": {
+        "designVariance": 5,
+        "motionIntensity": 3,
+        "visualDensity": 7
+      },
+      "typeAliases": {
+        "shadow": "boxShadow"
+      },
+      "theming": "Semantic colour tokens carry a dark default $value plus a light override under $extensions.mode.light. Generated CSS emits :root (dark) and [data-theme=\"light\"] blocks.",
+      "colourRules": [
+        "The Trace Is Cyan Rule: --aos-accent (cyan) appears only inside trace, evidence and source surfaces. It is never used for marketing or promotional CTA buttons.",
+        "Amber Means Unverified Rule: --aos-signal-amber marks only claims whose evidence chain is incomplete. It is never a generic warning colour."
+      ],
+      "hardRules": [
+        "no emoji as functional icons",
+        "no indigo/pink or purple gradient primary visual",
+        "no hardcoded colour values in UI code - reference var(--aos-*) only",
+        "no bounce easing cubic-bezier(0.68,-0.55,0.265,1.55)",
+        "spacing restricted to 4/8/12/16/20/24/32/40/48/64",
+        "radius capped at 8px everywhere",
+        "CJK fonts come from the system stack and are never vendored in full"
+      ],
+      "rejected": [
+        {
+          "candidate": "Switzer",
+          "reason": "ITF Free Font License is a closed-source licence: modification and redistribution are prohibited, which is incompatible with an open-source product."
+        },
+        {
+          "candidate": "Lucide",
+          "reason": "Outline-only. There is no filled variant, so active and selected states would require a second icon set, violating the single-icon-library rule."
+        }
+      ]
+    }
+  },
+
+  "primitive": {
+    "$description": "Layer 1. Hue-named raw values. Internal. Never referenced by UI.",
+
+    "neutral": {
+      "$description": "Cool neutral ramp. Cold graphite. Deliberately not the warm/cream near-black band that reads as beige in dark UI.",
+      "1000": { "$value": "#07090A", "$type": "color" },
+      "950": { "$value": "#0A0D0E", "$type": "color" },
+      "900": { "$value": "#0E1214", "$type": "color" },
+      "850": { "$value": "#121618", "$type": "color" },
+      "800": { "$value": "#181C1E", "$type": "color" },
+      "700": { "$value": "#20262A", "$type": "color" },
+      "600": { "$value": "#2A3134", "$type": "color" },
+      "500": { "$value": "#3A4347", "$type": "color" },
+      "400": { "$value": "#7A8488", "$type": "color" },
+      "300": { "$value": "#8A9498", "$type": "color" },
+      "200": { "$value": "#B4BDC0", "$type": "color" },
+      "100": { "$value": "#D3DADC", "$type": "color" },
+      "50": { "$value": "#E6EBEC", "$type": "color" }
+    },
+
+    "paper": {
+      "$description": "Cool light-neutral ramp for the light theme.",
+      "50": { "$value": "#F7F9F9", "$type": "color" },
+      "100": { "$value": "#FFFFFF", "$type": "color" },
+      "200": { "$value": "#F1F4F4", "$type": "color" },
+      "300": { "$value": "#E9EDEE", "$type": "color" },
+      "400": { "$value": "#D5DBDD", "$type": "color" },
+      "700": { "$value": "#767F82", "$type": "color" },
+      "800": { "$value": "#5F6A6E", "$type": "color" },
+      "850": { "$value": "#3C464A", "$type": "color" },
+      "900": { "$value": "#0F1416", "$type": "color" }
+    },
+
+    "cyan": {
+      "$description": "Trace hue. Instrument readout. Governed by The Trace Is Cyan Rule.",
+      "900": { "$value": "#04201D", "$type": "color" },
+      "800": { "$value": "#0E7F75", "$type": "color" },
+      "700": { "$value": "#12A79A", "$type": "color" },
+      "600": { "$value": "#1FBDB0", "$type": "color" },
+      "500": { "$value": "#3CCFC1", "$type": "color" },
+      "400": { "$value": "#4FDCD0", "$type": "color" },
+      "300": { "$value": "#7FE7DE", "$type": "color" },
+      "200": { "$value": "#B2F1EB", "$type": "color" }
+    },
+
+    "amber": {
+      "$description": "Evidence hue. Governed by Amber Means Unverified Rule. Never a generic warning.",
+      "700": { "$value": "#9A6620", "$type": "color" },
+      "600": { "$value": "#C4842A", "$type": "color" },
+      "500": { "$value": "#E8A33D", "$type": "color" }
+    },
+
+    "green": {
+      "$description": "Verified hue.",
+      "700": { "$value": "#2F7A4A", "$type": "color" },
+      "500": { "$value": "#57B87A", "$type": "color" }
+    },
+
+    "red": {
+      "$description": "Failed hue.",
+      "700": { "$value": "#A8352E", "$type": "color" },
+      "500": { "$value": "#E5544B", "$type": "color" }
+    },
+
+    "effect": {
+      "$description": "Effect colours. Under 1 percent of surface area. Never structural.",
+      "scrim": { "$value": "rgba(0, 0, 0, 0.72)", "$type": "color" },
+      "scrimSoft": { "$value": "rgba(0, 0, 0, 0.40)", "$type": "color" },
+      "hairlineLight": { "$value": "rgba(255, 255, 255, 0.10)", "$type": "color" },
+      "hairlineSoftLight": { "$value": "rgba(255, 255, 255, 0.06)", "$type": "color" },
+      "hairlineStrongLight": { "$value": "rgba(255, 255, 255, 0.16)", "$type": "color" },
+      "hairlineDark": { "$value": "rgba(0, 0, 0, 0.16)", "$type": "color" },
+      "hairlineSoftDark": { "$value": "rgba(0, 0, 0, 0.06)", "$type": "color" },
+      "spanFillAgent": { "$value": "rgba(60, 207, 193, 0.46)", "$type": "color" },
+      "spanFillLlm": { "$value": "rgba(60, 207, 193, 0.38)", "$type": "color" },
+      "spanFillRetrieval": { "$value": "rgba(60, 207, 193, 0.30)", "$type": "color" },
+      "spanFillTool": { "$value": "rgba(60, 207, 193, 0.22)", "$type": "color" },
+      "spanFillThink": { "$value": "rgba(60, 207, 193, 0.14)", "$type": "color" },
+      "spanFillFailed": { "$value": "rgba(229, 84, 75, 0.26)", "$type": "color" },
+      "tintAccent": { "$value": "rgba(60, 207, 193, 0.12)", "$type": "color" },
+      "tintAccentLight": { "$value": "rgba(14, 127, 117, 0.10)", "$type": "color" },
+      "focusDark": { "$value": "rgba(60, 207, 193, 0.45)", "$type": "color" },
+      "focusLight": { "$value": "rgba(14, 127, 117, 0.35)", "$type": "color" }
+    }
+  },
+
+  "semantic": {
+    "$description": "Layer 2. Role-named, theme-aware. This is the only layer UI code may reference for colour, type and rhythm.",
+
+    "color": {
+      "bg": {
+        "$value": "{primitive.neutral.950}",
+        "$type": "color",
+        "$description": "Page background. Cold graphite.",
+        "$extensions": { "mode": { "light": "{primitive.paper.50}" } }
+      },
+      "surface": {
+        "$value": "{primitive.neutral.850}",
+        "$type": "color",
+        "$description": "Default panel and card background.",
+        "$extensions": { "mode": { "light": "{primitive.paper.100}" } }
+      },
+      "surfaceRaised": {
+        "$value": "{primitive.neutral.800}",
+        "$type": "color",
+        "$description": "Table header, sticky rows, lifted evidence cards.",
+        "$extensions": { "mode": { "light": "{primitive.paper.200}" } }
+      },
+      "surfaceInset": {
+        "$value": "{primitive.neutral.1000}",
+        "$type": "color",
+        "$description": "Terminal blocks, code, raw JSON payloads.",
+        "$extensions": { "mode": { "light": "{primitive.paper.300}" } }
+      },
+      "fg": {
+        "$value": "{primitive.neutral.50}",
+        "$type": "color",
+        "$description": "Primary text. Cool off-white, not pure #fff.",
+        "$extensions": { "mode": { "light": "{primitive.paper.900}" } }
+      },
+      "fgSecondary": {
+        "$value": "{primitive.neutral.200}",
+        "$type": "color",
+        "$description": "Body copy, table cell text.",
+        "$extensions": { "mode": { "light": "{primitive.paper.850}" } }
+      },
+      "muted": {
+        "$value": "{primitive.neutral.300}",
+        "$type": "color",
+        "$description": "Secondary labels, de-emphasised metadata.",
+        "$extensions": { "mode": { "light": "{primitive.paper.800}" } }
+      },
+      "meta": {
+        "$value": "{primitive.neutral.400}",
+        "$type": "color",
+        "$description": "Tertiary metadata. Timestamps, hashes, char offsets.",
+        "$extensions": { "mode": { "light": "{primitive.paper.700}" } }
+      },
+      "border": {
+        "$value": "{primitive.neutral.600}",
+        "$type": "color",
+        "$description": "Default 1px hairline.",
+        "$extensions": { "mode": { "light": "{primitive.paper.400}" } }
+      },
+      "borderSoft": {
+        "$value": "{primitive.effect.hairlineSoftLight}",
+        "$type": "color",
+        "$extensions": { "mode": { "light": "{primitive.effect.hairlineSoftDark}" } }
+      },
+      "borderStrong": {
+        "$value": "{primitive.effect.hairlineStrongLight}",
+        "$type": "color",
+        "$extensions": { "mode": { "light": "{primitive.effect.hairlineDark}" } }
+      },
+
+      "accent": {
+        "$value": "{primitive.cyan.500}",
+        "$type": "color",
+        "$description": "Trace cyan. The Trace Is Cyan Rule: permitted only inside trace, evidence and source surfaces, and on the running state. Forbidden on marketing and promotional CTA buttons.",
+        "$extensions": { "mode": { "light": "{primitive.cyan.800}" } }
+      },
+      "accentHover": {
+        "$value": "{primitive.cyan.400}",
+        "$type": "color",
+        "$extensions": { "mode": { "light": "{primitive.cyan.700}" } }
+      },
+      "accentOn": {
+        "$value": "{primitive.cyan.900}",
+        "$type": "color",
+        "$description": "Foreground on accent fill. Dark-on-cyan, 8.9:1. White on cyan is forbidden (2.2:1).",
+        "$extensions": { "mode": { "light": "{primitive.paper.100}" } }
+      },
+      "accentSoft": {
+        "$value": "{primitive.effect.tintAccent}",
+        "$type": "color",
+        "$description": "Cyan wash. Active evidence binding, selected span background.",
+        "$extensions": { "mode": { "light": "{primitive.effect.tintAccentLight}" } }
+      },
+
+      "signalAmber": {
+        "$value": "{primitive.amber.500}",
+        "$type": "color",
+        "$description": "Amber Means Unverified Rule: marks only assertions whose evidence chain is incomplete. Never used as a generic warning.",
+        "$extensions": { "mode": { "light": "{primitive.amber.600}" } }
+      },
+
+      "verified": {
+        "$value": "{primitive.green.500}",
+        "$type": "color",
+        "$description": "Evidence chain complete and grounded.",
+        "$extensions": { "mode": { "light": "{primitive.green.700}" } }
+      },
+      "unverified": {
+        "$value": "{primitive.amber.500}",
+        "$type": "color",
+        "$description": "Evidence chain incomplete. Alias of signalAmber by definition.",
+        "$extensions": { "mode": { "light": "{primitive.amber.600}" } }
+      },
+      "failed": {
+        "$value": "{primitive.red.500}",
+        "$type": "color",
+        "$description": "Failed span, rollback, ungrounded claim.",
+        "$extensions": { "mode": { "light": "{primitive.red.700}" } }
+      },
+      "running": {
+        "$value": "{primitive.cyan.500}",
+        "$type": "color",
+        "$description": "Live execution state. Cyan is correct here: this is a trace surface.",
+        "$extensions": { "mode": { "light": "{primitive.cyan.800}" } }
+      },
+      "idle": {
+        "$value": "{primitive.neutral.400}",
+        "$type": "color",
+        "$description": "Idle or not yet started. Low-chroma so it never competes with accent.",
+        "$extensions": { "mode": { "light": "{primitive.paper.700}" } }
+      },
+
+      "meter": {
+        "$description": "Resource meters deliberately avoid amber, because amber is reserved for evidence. A full meter is not an evidence problem.",
+        "fill": {
+          "$value": "{primitive.neutral.200}",
+          "$type": "color",
+          "$extensions": { "mode": { "light": "{primitive.paper.850}" } }
+        },
+        "fillCritical": {
+          "$value": "{primitive.red.500}",
+          "$type": "color",
+          "$extensions": { "mode": { "light": "{primitive.red.700}" } }
+        },
+        "track": {
+          "$value": "{primitive.neutral.1000}",
+          "$type": "color",
+          "$extensions": { "mode": { "light": "{primitive.paper.300}" } }
+        }
+      },
+
+      "span": {
+        "$description": "Span-kind differentiation is carried by cyan fill density plus a 16px Tabler icon and a text label, not by competing hues. One hue keeps the trace canvas quiet at density 7.",
+        "stroke": { "$value": "{primitive.cyan.400}", "$type": "color" },
+        "fillAgent": { "$value": "{primitive.effect.spanFillAgent}", "$type": "color" },
+        "fillLlm": { "$value": "{primitive.effect.spanFillLlm}", "$type": "color" },
+        "fillRetrieval": { "$value": "{primitive.effect.spanFillRetrieval}", "$type": "color" },
+        "fillTool": { "$value": "{primitive.effect.spanFillTool}", "$type": "color" },
+        "fillThink": { "$value": "{primitive.effect.spanFillThink}", "$type": "color" },
+        "fillFailed": { "$value": "{primitive.effect.spanFillFailed}", "$type": "color" },
+        "strokeFailed": { "$value": "{primitive.red.500}", "$type": "color" }
+      }
+    },
+
+    "font": {
+      "family": {
+        "$description": "Two families maximum. CJK resolves through the system stack and is never vendored in full (10-20MB). `agentos fonts install-cjk` optionally installs Sarasa Gothic for offline use.",
+        "sans": {
+          "$value": ["Geist", "system-ui", "-apple-system", "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", "sans-serif"],
+          "$type": "fontFamily"
+        },
+        "mono": {
+          "$value": ["Commit Mono", "Sarasa Mono SC", "Cascadia Mono", "Consolas", "monospace"],
+          "$type": "fontFamily"
+        },
+        "cjkOptional": {
+          "$value": ["Sarasa Gothic SC", "Sarasa Mono SC", "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC"],
+          "$type": "fontFamily",
+          "$description": "Only present after `agentos fonts install-cjk`. Never required for correct rendering."
+        }
+      },
+
+      "size": {
+        "$description": "Nominal 1.18 ratio snapped to the px grid. 12 and 14 are extra steps for cockpit-density UI chrome.",
+        "2xs": { "$value": "0.6875rem", "$type": "dimension" },
+        "xs": { "$value": "0.75rem", "$type": "dimension" },
+        "sm": { "$value": "0.8125rem", "$type": "dimension" },
+        "base": { "$value": "0.875rem", "$type": "dimension" },
+        "md": { "$value": "1rem", "$type": "dimension" },
+        "lg": { "$value": "1.125rem", "$type": "dimension" },
+        "xl": { "$value": "1.25rem", "$type": "dimension" },
+        "2xl": { "$value": "1.5rem", "$type": "dimension" },
+        "3xl": { "$value": "1.875rem", "$type": "dimension" },
+        "4xl": { "$value": "2.375rem", "$type": "dimension" }
+      },
+
+      "weight": {
+        "$description": "Three weights only. 510 and 590 separate emphasis from announcement without a fourth family.",
+        "read": { "$value": 400, "$type": "fontWeight" },
+        "emphasize": { "$value": 510, "$type": "fontWeight" },
+        "announce": { "$value": 590, "$type": "fontWeight" }
+      },
+
+      "leading": {
+        "body": { "$value": 1.55, "$type": "number" },
+        "heading": { "$value": 1.25, "$type": "number" },
+        "dense": { "$value": 1.45, "$type": "number" },
+        "tight": { "$value": 1.15, "$type": "number" }
+      },
+
+      "tracking": {
+        "body": { "$value": 0, "$type": "number", "$description": "em. Body copy never tracks." },
+        "small": { "$value": 0.02, "$type": "number", "$description": "em. Applies to 11-13px text." },
+        "caps": { "$value": 0.08, "$type": "number", "$description": "em. Mandatory for ALL CAPS labels." },
+        "display": { "$value": -0.018, "$type": "number", "$description": "em. Applies at 30px and above." }
+      }
+    },
+
+    "space": {
+      "$description": "4px grid. Non-grid values are forbidden in layout.",
+      "1": { "$value": "0.25rem", "$type": "dimension" },
+      "2": { "$value": "0.5rem", "$type": "dimension" },
+      "3": { "$value": "0.75rem", "$type": "dimension" },
+      "4": { "$value": "1rem", "$type": "dimension" },
+      "5": { "$value": "1.25rem", "$type": "dimension" },
+      "6": { "$value": "1.5rem", "$type": "dimension" },
+      "8": { "$value": "2rem", "$type": "dimension" },
+      "10": { "$value": "2.5rem", "$type": "dimension" },
+      "12": { "$value": "3rem", "$type": "dimension" },
+      "16": { "$value": "4rem", "$type": "dimension" }
+    },
+
+    "radius": {
+      "$description": "Hard ceiling of 8px site-wide. Nothing may exceed lg.",
+      "sm": { "$value": "0.25rem", "$type": "dimension" },
+      "md": { "$value": "0.375rem", "$type": "dimension" },
+      "lg": { "$value": "0.5rem", "$type": "dimension" },
+      "pill": { "$value": "9999px", "$type": "dimension" }
+    },
+
+    "elevation": {
+      "$description": "Depth by luminance step plus 1px hairline, not by blurred shadow. Blur is reserved for functional overlays that sit above content.",
+      "flat": {
+        "$value": [],
+        "$type": "shadow",
+        "$description": "No elevation. Default state for all data rows and panels."
+      },
+      "ring": {
+        "$value": [
+          {
+            "color": "{primitive.neutral.600}",
+            "offsetX": "0",
+            "offsetY": "0",
+            "blur": "0",
+            "spread": "1px",
+            "inset": true
+          }
+        ],
+        "$type": "shadow",
+        "$description": "Default panel edge. 1px hairline, zero blur.",
+        "$extensions": { "mode": { "light": "{primitive.paper.400}" } }
+      },
+      "raised": {
+        "$value": [
+          {
+            "color": "{primitive.neutral.600}",
+            "offsetX": "0",
+            "offsetY": "0",
+            "blur": "0",
+            "spread": "1px",
+            "inset": true
+          },
+          {
+            "color": "{primitive.effect.scrimSoft}",
+            "offsetX": "0",
+            "offsetY": "1px",
+            "blur": "2px",
+            "spread": "0",
+            "inset": false
+          }
+        ],
+        "$type": "shadow"
+      },
+      "overlay": {
+        "$value": [
+          {
+            "color": "{primitive.effect.hairlineLight}",
+            "offsetX": "0",
+            "offsetY": "0",
+            "blur": "0",
+            "spread": "1px",
+            "inset": false
+          },
+          {
+            "color": "{primitive.effect.scrim}",
+            "offsetX": "0",
+            "offsetY": "8px",
+            "blur": "24px",
+            "spread": "-8px",
+            "inset": false
+          }
+        ],
+        "$type": "shadow",
+        "$description": "Popover, dropdown, command palette. The only place backdrop-filter is permitted, because it is functional."
+      },
+      "focusRing": {
+        "$value": [
+          {
+            "color": "{primitive.effect.focusDark}",
+            "offsetX": "0",
+            "offsetY": "0",
+            "blur": "0",
+            "spread": "3px",
+            "inset": false
+          }
+        ],
+        "$type": "shadow",
+        "$description": "Visible focus indicator. Never removed.",
+        "$extensions": { "mode": { "light": "{primitive.effect.focusLight}" } }
+      }
+    },
+
+    "motion": {
+      "duration": {
+        "$description": "150ms is the convergence value. Nothing exceeds 400ms; no bounce easing anywhere.",
+        "instant": { "$value": "80ms", "$type": "duration" },
+        "fast": { "$value": "120ms", "$type": "duration" },
+        "base": { "$value": "180ms", "$type": "duration" },
+        "slow": { "$value": "260ms", "$type": "duration" }
+      },
+      "easing": {
+        "standard": { "$value": [0.2, 0, 0, 1], "$type": "cubicBezier" },
+        "emphasized": { "$value": [0.4, 0, 0.2, 1], "$type": "cubicBezier" }
+      }
+    },
+
+    "z": {
+      "$description": "Six levels. Anything outside this list is a bug.",
+      "base": { "$value": 0, "$type": "number" },
+      "sticky": { "$value": 10, "$type": "number" },
+      "panel": { "$value": 20, "$type": "number" },
+      "overlay": { "$value": 100, "$type": "number" },
+      "modal": { "$value": 200, "$type": "number" },
+      "toast": { "$value": 300, "$type": "number" }
+    }
+  },
+
+  "component": {
+    "$description": "Layer 3. Component-scoped tokens. Cockpit density (VISUAL_DENSITY 7): compact rows, hairline dividers, no decorative card containers.",
+
+    "layout": {
+      "railWidth": { "$value": "15rem", "$type": "dimension", "$description": "240px. Runs list rail." },
+      "evidencePanelWidth": { "$value": "22.5rem", "$type": "dimension", "$description": "360px. Evidence chain panel." },
+      "containerMax": { "$value": "80rem", "$type": "dimension", "$description": "1280px." },
+      "topBarHeight": { "$value": "3rem", "$type": "dimension", "$description": "48px." },
+      "statStripHeight": { "$value": "1.75rem", "$type": "dimension", "$description": "28px. Single-row metric strip, not a card grid." }
+    },
+
+    "trace": {
+      "rowHeight": { "$value": "1.75rem", "$type": "dimension", "$description": "28px." },
+      "indentStep": { "$value": "0.75rem", "$type": "dimension", "$description": "12px per nesting level." },
+      "guideWidth": { "$value": "1px", "$type": "dimension", "$description": "Nesting guide line. 1px hairline, never a coloured side stripe." },
+      "barHeight": { "$value": "0.625rem", "$type": "dimension", "$description": "10px waterfall bar." },
+      "barRadius": { "$value": "2px", "$type": "dimension" },
+      "barMinWidth": { "$value": "2px", "$type": "dimension", "$description": "Keeps sub-millisecond spans visible." },
+      "dockHeight": { "$value": "17.5rem", "$type": "dimension", "$description": "280px default span-detail dock." },
+      "dockMinHeight": { "$value": "12.5rem", "$type": "dimension", "$description": "200px." }
+    },
+
+    "evidence": {
+      "chipHeight": { "$value": "1rem", "$type": "dimension", "$description": "16px inline citation chip." },
+      "chipPaddingX": { "$value": "0.25rem", "$type": "dimension" },
+      "chipRadius": { "$value": "{semantic.radius.sm}", "$type": "dimension" },
+      "relevanceBarHeight": { "$value": "4px", "$type": "dimension" },
+      "relevanceBarWidth": { "$value": "3rem", "$type": "dimension" },
+      "cardPadding": { "$value": "0.75rem", "$type": "dimension" },
+      "pulseDuration": { "$value": "{semantic.motion.duration.base}", "$type": "duration" }
+    },
+
+    "button": {
+      "heightSm": { "$value": "1.75rem", "$type": "dimension", "$description": "28px. Dense toolbars and tables." },
+      "heightMd": { "$value": "2rem", "$type": "dimension", "$description": "32px. Default." },
+      "paddingX": { "$value": "0.75rem", "$type": "dimension" },
+      "radius": { "$value": "{semantic.radius.sm}", "$type": "dimension" },
+      "iconGap": { "$value": "0.25rem", "$type": "dimension" },
+      "ctaBackground": {
+        "$value": "{semantic.color.fg}",
+        "$type": "color",
+        "$description": "Marketing and install CTAs use inverted neutrals, never cyan. See The Trace Is Cyan Rule."
+      },
+      "ctaForeground": {
+        "$value": "{semantic.color.bg}",
+        "$type": "color",
+        "$description": "Inverted neutral on neutral. Contrast 16:1."
+      }
+    },
+
+    "input": {
+      "height": { "$value": "2rem", "$type": "dimension", "$description": "32px." },
+      "paddingX": { "$value": "0.5rem", "$type": "dimension" },
+      "radius": { "$value": "{semantic.radius.md}", "$type": "dimension" }
+    },
+
+    "table": {
+      "headerHeight": { "$value": "2rem", "$type": "dimension" },
+      "rowHeight": { "$value": "2rem", "$type": "dimension" },
+      "dividerWidth": { "$value": "1px", "$type": "dimension" }
+    },
+
+    "meter": {
+      "height": { "$value": "6px", "$type": "dimension" },
+      "trackRadius": { "$value": "2px", "$type": "dimension" },
+      "criticalThreshold": { "$value": 0.8, "$type": "number", "$description": "Fill ratio above which the meter switches to meter.fillCritical." }
+    },
+
+    "sparkline": {
+      "barWidth": { "$value": "2px", "$type": "dimension" },
+      "barGap": { "$value": "2px", "$type": "dimension" },
+      "height": { "$value": "1rem", "$type": "dimension" }
+    }
+  }
+}

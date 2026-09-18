@@ -1,0 +1,668 @@
+/* =============================================================================
+   AetherOS — Design Tokens (CSS custom properties)
+   -----------------------------------------------------------------------------
+   Source of truth : design-tokens.json (W3C DTCG)
+   Prefix          : --aos-
+   Layers          : primitive -> semantic -> component
+   Themes          : :root = dark (default) | [data-theme="light"] = light
+   Icon library    : Tabler Icons 3.46.0 (MIT) — outline + filled
+
+   RULES
+   1. UI code MUST reference semantic / component tokens only. Primitive tokens
+      (--aos-neutral-*, --aos-cyan-*, ...) are internal and must never appear
+      in component styles.
+   2. No hardcoded colour literals in UI code. Only #fff / #000 are tolerated,
+      and neither is required here.
+   3. The Trace Is Cyan Rule — --aos-accent appears only inside trace,
+      evidence and source surfaces, and on the running state. Marketing and
+      promotional CTAs use inverted neutrals (.aos-btn-cta), never cyan.
+   4. Amber Means Unverified Rule — --aos-signal-amber marks only assertions
+      with an incomplete evidence chain. It is never a generic warning.
+      Resource meters therefore use --aos-meter-fill, not amber.
+   5. No emoji as functional icons. Icons come from Tabler Icons only.
+   6. No purple / indigo-to-pink gradient.
+   7. No bounce easing cubic-bezier(0.68,-0.55,0.265,1.55).
+   8. Radius never exceeds 8px.
+   ============================================================================= */
+
+:root {
+  color-scheme: dark;
+
+  /* ---------------------------------------------------------------------------
+     PRIMITIVE — cool neutral ramp
+     Cold graphite. Deliberately not the warm/cream near-black band that reads
+     as beige in dark UI.
+     ------------------------------------------------------------------------ */
+  --aos-neutral-1000: #07090a;
+  --aos-neutral-950: #0a0d0e;
+  --aos-neutral-900: #0e1214;
+  --aos-neutral-850: #121618;
+  --aos-neutral-800: #181c1e;
+  --aos-neutral-700: #20262a;
+  --aos-neutral-600: #2a3134;
+  --aos-neutral-500: #3a4347;
+  --aos-neutral-400: #7a8488;
+  --aos-neutral-300: #8a9498;
+  --aos-neutral-200: #b4bdc0;
+  --aos-neutral-100: #d3dadc;
+  --aos-neutral-50: #e6ebec;
+
+  /* PRIMITIVE — cool light-neutral ramp (light theme) */
+  --aos-paper-50: #f7f9f9;
+  --aos-paper-100: #ffffff;
+  --aos-paper-200: #f1f4f4;
+  --aos-paper-300: #e9edee;
+  --aos-paper-400: #d5dbdd;
+  --aos-paper-700: #767f82;
+  --aos-paper-800: #5f6a6e;
+  --aos-paper-850: #3c464a;
+  --aos-paper-900: #0f1416;
+
+  /* PRIMITIVE — trace cyan */
+  --aos-cyan-900: #04201d;
+  --aos-cyan-800: #0e7f75;
+  --aos-cyan-700: #12a79a;
+  --aos-cyan-600: #1fbdb0;
+  --aos-cyan-500: #3ccfc1;
+  --aos-cyan-400: #4fdcd0;
+  --aos-cyan-300: #7fe7de;
+  --aos-cyan-200: #b2f1eb;
+
+  /* PRIMITIVE — evidence amber */
+  --aos-amber-700: #9a6620;
+  --aos-amber-600: #c4842a;
+  --aos-amber-500: #e8a33d;
+
+  /* PRIMITIVE — verified green */
+  --aos-green-700: #2f7a4a;
+  --aos-green-500: #57b87a;
+
+  /* PRIMITIVE — failed red */
+  --aos-red-700: #a8352e;
+  --aos-red-500: #e5544b;
+
+  /* PRIMITIVE — effect colours (<1% of surface area, never structural) */
+  --aos-scrim: rgba(0, 0, 0, 0.72);
+  --aos-scrim-soft: rgba(0, 0, 0, 0.4);
+  --aos-hairline-light: rgba(255, 255, 255, 0.1);
+  --aos-hairline-soft-light: rgba(255, 255, 255, 0.06);
+  --aos-hairline-strong-light: rgba(255, 255, 255, 0.16);
+  --aos-hairline-dark: rgba(0, 0, 0, 0.16);
+  --aos-hairline-soft-dark: rgba(0, 0, 0, 0.06);
+  --aos-span-fill-agent: rgba(60, 207, 193, 0.46);
+  --aos-span-fill-llm: rgba(60, 207, 193, 0.38);
+  --aos-span-fill-retrieval: rgba(60, 207, 193, 0.3);
+  --aos-span-fill-tool: rgba(60, 207, 193, 0.22);
+  --aos-span-fill-think: rgba(60, 207, 193, 0.14);
+  --aos-span-fill-failed: rgba(229, 84, 75, 0.26);
+  --aos-tint-accent: rgba(60, 207, 193, 0.12);
+  --aos-tint-accent-light: rgba(14, 127, 117, 0.1);
+  --aos-focus-dark: rgba(60, 207, 193, 0.45);
+  --aos-focus-light: rgba(14, 127, 117, 0.35);
+
+  /* ---------------------------------------------------------------------------
+     SEMANTIC — surface
+     ------------------------------------------------------------------------ */
+  --aos-bg: var(--aos-neutral-950);
+  --aos-surface: var(--aos-neutral-850);
+  --aos-surface-raised: var(--aos-neutral-800);
+  --aos-surface-inset: var(--aos-neutral-1000);
+
+  /* SEMANTIC — foreground */
+  --aos-fg: var(--aos-neutral-50);
+  --aos-fg-secondary: var(--aos-neutral-200);
+  --aos-muted: var(--aos-neutral-300);
+  --aos-meta: var(--aos-neutral-400);
+
+  /* SEMANTIC — border */
+  --aos-border: var(--aos-neutral-600);
+  --aos-border-soft: var(--aos-hairline-soft-light);
+  --aos-border-strong: var(--aos-hairline-strong-light);
+
+  /* SEMANTIC — trace cyan (see Rule 3) */
+  --aos-accent: var(--aos-cyan-500);
+  --aos-accent-hover: var(--aos-cyan-400);
+  --aos-accent-on: var(--aos-cyan-900);
+  --aos-accent-soft: var(--aos-tint-accent);
+
+  /* SEMANTIC — evidence amber (see Rule 4) */
+  --aos-signal-amber: var(--aos-amber-500);
+  --aos-unverified: var(--aos-signal-amber);
+
+  /* SEMANTIC — status */
+  --aos-verified: var(--aos-green-500);
+  --aos-failed: var(--aos-red-500);
+  --aos-running: var(--aos-cyan-500);
+  --aos-idle: var(--aos-neutral-400);
+
+  /* SEMANTIC — resource meters (amber is reserved, so meters are neutral) */
+  --aos-meter-fill: var(--aos-neutral-200);
+  --aos-meter-fill-critical: var(--aos-red-500);
+  --aos-meter-track: var(--aos-neutral-1000);
+
+  /* SEMANTIC — span fills (one hue, density-graded, plus icon + label) */
+  --aos-span-stroke: var(--aos-cyan-400);
+  --aos-span-agent: var(--aos-span-fill-agent);
+  --aos-span-llm: var(--aos-span-fill-llm);
+  --aos-span-retrieval: var(--aos-span-fill-retrieval);
+  --aos-span-tool: var(--aos-span-fill-tool);
+  --aos-span-think: var(--aos-span-fill-think);
+  --aos-span-failed: var(--aos-span-fill-failed);
+  --aos-span-stroke-failed: var(--aos-red-500);
+
+  /* ---------------------------------------------------------------------------
+     SEMANTIC — typography (theme-independent)
+     ------------------------------------------------------------------------ */
+  --aos-font-sans: "Geist", system-ui, -apple-system, "PingFang SC",
+    "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+  --aos-font-mono: "Commit Mono", "Sarasa Mono SC", "Cascadia Mono", Consolas,
+    monospace;
+  --aos-font-cjk-optional: "Sarasa Gothic SC", "Sarasa Mono SC", "PingFang SC",
+    "Microsoft YaHei", "Noto Sans CJK SC";
+  --aos-font-display: var(--aos-font-sans);
+
+  --aos-text-2xs: 0.6875rem; /* 11px */
+  --aos-text-xs: 0.75rem; /* 12px */
+  --aos-text-sm: 0.8125rem; /* 13px */
+  --aos-text-base: 0.875rem; /* 14px */
+  --aos-text-md: 1rem; /* 16px */
+  --aos-text-lg: 1.125rem; /* 18px */
+  --aos-text-xl: 1.25rem; /* 20px */
+  --aos-text-2xl: 1.5rem; /* 24px */
+  --aos-text-3xl: 1.875rem; /* 30px */
+  --aos-text-4xl: 2.375rem; /* 38px */
+
+  --aos-weight-read: 400;
+  --aos-weight-emphasize: 510;
+  --aos-weight-announce: 590;
+
+  --aos-leading-body: 1.55;
+  --aos-leading-heading: 1.25;
+  --aos-leading-dense: 1.45;
+  --aos-leading-tight: 1.15;
+
+  --aos-tracking-body: 0;
+  --aos-tracking-small: 0.02em;
+  --aos-tracking-caps: 0.08em;
+  --aos-tracking-display: -0.018em;
+
+  /* ---------------------------------------------------------------------------
+     SEMANTIC — space (4px grid only)
+     ------------------------------------------------------------------------ */
+  --aos-space-1: 0.25rem; /* 4px  */
+  --aos-space-2: 0.5rem; /* 8px  */
+  --aos-space-3: 0.75rem; /* 12px */
+  --aos-space-4: 1rem; /* 16px */
+  --aos-space-5: 1.25rem; /* 20px */
+  --aos-space-6: 1.5rem; /* 24px */
+  --aos-space-8: 2rem; /* 32px */
+  --aos-space-10: 2.5rem; /* 40px */
+  --aos-space-12: 3rem; /* 48px */
+  --aos-space-16: 4rem; /* 64px */
+
+  /* ---------------------------------------------------------------------------
+     SEMANTIC — radius (hard ceiling 8px)
+     ------------------------------------------------------------------------ */
+  --aos-radius-sm: 0.25rem; /* 4px */
+  --aos-radius-md: 0.375rem; /* 6px */
+  --aos-radius-lg: 0.5rem; /* 8px — site-wide maximum */
+  --aos-radius-pill: 9999px;
+
+  /* ---------------------------------------------------------------------------
+     SEMANTIC — elevation (luminance + 1px hairline, not blurred shadow)
+     ------------------------------------------------------------------------ */
+  --aos-elev-flat: none;
+  --aos-elev-ring: inset 0 0 0 1px var(--aos-border);
+  --aos-elev-raised: inset 0 0 0 1px var(--aos-border),
+    0 1px 2px var(--aos-scrim-soft);
+  --aos-elev-overlay: 0 0 0 1px var(--aos-hairline-light),
+    0 8px 24px -8px var(--aos-scrim);
+  --aos-focus-ring: 0 0 0 3px var(--aos-focus-dark);
+
+  /* ---------------------------------------------------------------------------
+     SEMANTIC — motion (150ms convergence, no bounce)
+     ------------------------------------------------------------------------ */
+  --aos-motion-instant: 80ms;
+  --aos-motion-fast: 120ms;
+  --aos-motion-base: 180ms;
+  --aos-motion-slow: 260ms;
+  --aos-ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --aos-ease-emphasized: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* ---------------------------------------------------------------------------
+     SEMANTIC — z-index
+     ------------------------------------------------------------------------ */
+  --aos-z-base: 0;
+  --aos-z-sticky: 10;
+  --aos-z-panel: 20;
+  --aos-z-overlay: 100;
+  --aos-z-modal: 200;
+  --aos-z-toast: 300;
+
+  /* ---------------------------------------------------------------------------
+     COMPONENT — layout
+     ------------------------------------------------------------------------ */
+  --aos-layout-rail-width: 15rem; /* 240px */
+  --aos-layout-evidence-width: 22.5rem; /* 360px */
+  --aos-layout-container-max: 80rem; /* 1280px */
+  --aos-layout-topbar-height: 3rem; /* 48px */
+  --aos-layout-statstrip-height: 1.75rem; /* 28px */
+
+  /* COMPONENT — trace waterfall */
+  --aos-trace-row-height: 1.75rem; /* 28px */
+  --aos-trace-indent-step: 0.75rem; /* 12px */
+  --aos-trace-guide-width: 1px;
+  --aos-trace-bar-height: 0.625rem; /* 10px */
+  --aos-trace-bar-radius: 2px;
+  --aos-trace-bar-min-width: 2px;
+  --aos-trace-dock-height: 17.5rem; /* 280px */
+  --aos-trace-dock-min-height: 12.5rem; /* 200px */
+
+  /* COMPONENT — evidence chain */
+  --aos-evidence-chip-height: 1rem; /* 16px */
+  --aos-evidence-chip-padding-x: 0.25rem; /* 4px */
+  --aos-evidence-chip-radius: var(--aos-radius-sm);
+  --aos-evidence-relevance-height: 4px;
+  --aos-evidence-relevance-width: 3rem; /* 48px */
+  --aos-evidence-card-padding: var(--aos-space-3);
+
+  /* COMPONENT — controls */
+  --aos-button-height-sm: 1.75rem; /* 28px */
+  --aos-button-height-md: 2rem; /* 32px */
+  --aos-button-padding-x: var(--aos-space-3);
+  --aos-button-radius: var(--aos-radius-sm);
+  --aos-button-icon-gap: var(--aos-space-1);
+  --aos-input-height: 2rem; /* 32px */
+  --aos-input-padding-x: var(--aos-space-2);
+  --aos-input-radius: var(--aos-radius-md);
+
+  /* COMPONENT — table */
+  --aos-table-header-height: 2rem; /* 32px */
+  --aos-table-row-height: 2rem; /* 32px */
+  --aos-table-divider-width: 1px;
+
+  /* COMPONENT — meters and sparklines */
+  --aos-meter-height: 6px;
+  --aos-meter-track-radius: 2px;
+  --aos-meter-critical-threshold: 0.8;
+  --aos-sparkline-bar-width: 2px;
+  --aos-sparkline-bar-gap: 2px;
+  --aos-sparkline-height: 1rem; /* 16px */
+}
+
+/* =============================================================================
+   LIGHT THEME
+   Only semantic colour tokens are overridden. Primitives, typography, spacing,
+   radius, motion and z-index are theme-independent.
+   ============================================================================= */
+[data-theme="light"] {
+  color-scheme: light;
+
+  --aos-bg: var(--aos-paper-50);
+  --aos-surface: var(--aos-paper-100);
+  --aos-surface-raised: var(--aos-paper-200);
+  --aos-surface-inset: var(--aos-paper-300);
+
+  --aos-fg: var(--aos-paper-900);
+  --aos-fg-secondary: var(--aos-paper-850);
+  --aos-muted: var(--aos-paper-800);
+  --aos-meta: var(--aos-paper-700);
+
+  --aos-border: var(--aos-paper-400);
+  --aos-border-soft: var(--aos-hairline-soft-dark);
+  --aos-border-strong: var(--aos-hairline-dark);
+
+  /* Accent deepens rather than lightens, so white-on-cyan stays legible. */
+  --aos-accent: var(--aos-cyan-800);
+  --aos-accent-hover: var(--aos-cyan-700);
+  --aos-accent-on: var(--aos-paper-100);
+  --aos-accent-soft: var(--aos-tint-accent-light);
+
+  --aos-signal-amber: var(--aos-amber-600);
+  --aos-unverified: var(--aos-signal-amber);
+
+  --aos-verified: var(--aos-green-700);
+  --aos-failed: var(--aos-red-700);
+  --aos-running: var(--aos-cyan-800);
+  --aos-idle: var(--aos-paper-700);
+
+  --aos-meter-fill: var(--aos-paper-850);
+  --aos-meter-fill-critical: var(--aos-red-700);
+  --aos-meter-track: var(--aos-paper-300);
+
+  --aos-elev-ring: inset 0 0 0 1px var(--aos-border);
+  --aos-elev-raised: inset 0 0 0 1px var(--aos-border),
+    0 1px 2px var(--aos-scrim-soft);
+  --aos-focus-ring: 0 0 0 3px var(--aos-focus-light);
+}
+
+/* =============================================================================
+   BASE
+   ============================================================================= */
+html {
+  background: var(--aos-bg);
+  color: var(--aos-fg);
+  font-family: var(--aos-font-sans);
+  font-size: var(--aos-text-base);
+  font-weight: var(--aos-weight-read);
+  line-height: var(--aos-leading-body);
+  letter-spacing: var(--aos-tracking-body);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Visible focus. Never removed, never replaced with outline: none. */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  /* outline is kept as a transparent 2px ring so that forced-colors mode still
+     has something to paint. box-shadow alone is stripped by Windows high
+     contrast, which would leave keyboard users with no focus indicator. */
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  box-shadow: var(--aos-focus-ring);
+  border-radius: var(--aos-radius-sm);
+}
+
+@media (forced-colors: active) {
+  :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+    outline-color: CanvasText;
+  }
+}
+
+/* =============================================================================
+   TYPOGRAPHY UTILITIES
+   Every number in this product — duration, tokens, bytes, offsets, deltas —
+   is rendered in mono with tabular figures. Proportional digits make waterfall
+   columns and metric strips jitter, which destroys scanability at density 7.
+   ============================================================================= */
+.aos-mono {
+  font-family: var(--aos-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1, "zero" 1;
+  letter-spacing: var(--aos-tracking-body);
+}
+
+/* Durations, latencies, elapsed time. */
+.aos-duration {
+  font-family: var(--aos-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+  text-align: right;
+  color: var(--aos-fg-secondary);
+}
+
+/* Counters, token counts, byte sizes, similarity scores. */
+.aos-metric {
+  font-family: var(--aos-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+  color: var(--aos-fg);
+}
+
+/* Signed deltas: +4.2pt / -180ms. Always keep the sign glyph. */
+.aos-delta {
+  font-family: var(--aos-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+/* Direction and valence are orthogonal. data-sign renders the arrow glyph;
+   data-tone renders the colour. A latency drop is data-sign="down" but GOOD, so
+   colour must never be derived from sign.
+   Usage: <span class="aos-delta" data-sign="down" data-tone="good">180ms</span> */
+.aos-delta {
+  color: var(--aos-muted); /* fail-safe when data-tone is absent */
+}
+.aos-delta[data-tone="good"] {
+  color: var(--aos-verified);
+}
+.aos-delta[data-tone="bad"] {
+  color: var(--aos-failed);
+}
+.aos-delta[data-tone="flat"] {
+  color: var(--aos-muted);
+}
+
+/* Identifiers, hashes, file paths, chunk offsets. */
+.aos-id {
+  font-family: var(--aos-font-mono);
+  color: var(--aos-meta);
+  font-size: var(--aos-text-xs);
+  letter-spacing: var(--aos-tracking-body);
+  overflow-wrap: anywhere;
+}
+
+/* ALL CAPS section labels. Tracking is mandatory at small sizes. */
+.aos-label-caps {
+  font-size: var(--aos-text-2xs);
+  font-weight: var(--aos-weight-emphasize);
+  text-transform: uppercase;
+  letter-spacing: var(--aos-tracking-caps);
+  color: var(--aos-meta);
+}
+
+/* Display headings. Negative tracking only applies at 30px and above. */
+.aos-display {
+  font-family: var(--aos-font-display);
+  font-weight: var(--aos-weight-announce);
+  line-height: var(--aos-leading-heading);
+  letter-spacing: var(--aos-tracking-display);
+  color: var(--aos-fg);
+}
+
+/* =============================================================================
+   SURFACE UTILITIES
+   ============================================================================= */
+.aos-panel {
+  background: var(--aos-surface);
+  box-shadow: var(--aos-elev-ring);
+  border-radius: var(--aos-radius-md);
+}
+
+/* Dense data lists: hairline dividers, no card containers. */
+.aos-list {
+  display: flex;
+  flex-direction: column;
+}
+.aos-list > * + * {
+  border-top: var(--aos-table-divider-width) solid var(--aos-border-soft);
+}
+
+.aos-inset {
+  background: var(--aos-surface-inset);
+  border-radius: var(--aos-radius-sm);
+}
+
+/* =============================================================================
+   BUTTONS
+   Three families, split by colour rule, not by size.
+   ============================================================================= */
+
+/* .aos-btn-trace — in-product actions that operate on a trace, a span or an
+   evidence item. Cyan is correct here: this is a trace surface. */
+.aos-btn-trace {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--aos-button-icon-gap);
+  height: var(--aos-button-height-md);
+  padding: 0 var(--aos-button-padding-x);
+  border: 0;
+  border-radius: var(--aos-button-radius);
+  background: var(--aos-accent);
+  color: var(--aos-accent-on);
+  font-family: var(--aos-font-sans);
+  font-size: var(--aos-text-sm);
+  font-weight: var(--aos-weight-emphasize);
+  cursor: pointer;
+}
+.aos-btn-trace:hover {
+  background: var(--aos-accent-hover);
+}
+.aos-btn-trace:disabled {
+  background: var(--aos-surface-raised);
+  color: var(--aos-meta);
+  cursor: not-allowed;
+}
+
+/* .aos-btn-cta — marketing, install, docs and other promotional actions.
+   The Trace Is Cyan Rule: no cyan here. Inverted neutrals instead. */
+.aos-btn-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--aos-button-icon-gap);
+  height: var(--aos-button-height-md);
+  padding: 0 var(--aos-button-padding-x);
+  border: 0;
+  border-radius: var(--aos-button-radius);
+  background: var(--aos-fg);
+  color: var(--aos-bg);
+  font-family: var(--aos-font-sans);
+  font-size: var(--aos-text-sm);
+  font-weight: var(--aos-weight-emphasize);
+  cursor: pointer;
+}
+.aos-btn-cta:hover {
+  background: var(--aos-fg-secondary);
+}
+
+/* .aos-btn-secondary — neutral outline. The default for everything else. */
+.aos-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--aos-button-icon-gap);
+  height: var(--aos-button-height-md);
+  padding: 0 var(--aos-button-padding-x);
+  border: 1px solid var(--aos-border);
+  border-radius: var(--aos-button-radius);
+  background: transparent;
+  color: var(--aos-fg-secondary);
+  font-family: var(--aos-font-sans);
+  font-size: var(--aos-text-sm);
+  font-weight: var(--aos-weight-read);
+  cursor: pointer;
+}
+.aos-btn-secondary:hover {
+  background: var(--aos-surface-raised);
+  color: var(--aos-fg);
+}
+
+/* .aos-btn-danger — rollback, delete, abort. */
+.aos-btn-danger {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--aos-button-icon-gap);
+  height: var(--aos-button-height-md);
+  padding: 0 var(--aos-button-padding-x);
+  border: 1px solid var(--aos-failed);
+  border-radius: var(--aos-button-radius);
+  background: transparent;
+  color: var(--aos-failed);
+  font-family: var(--aos-font-sans);
+  font-size: var(--aos-text-sm);
+  font-weight: var(--aos-weight-emphasize);
+  cursor: pointer;
+}
+.aos-btn-danger:hover {
+  background: var(--aos-failed);
+  color: var(--aos-bg);
+}
+
+/* =============================================================================
+   STATUS
+   Amber is reserved for evidence. Everything else states with icon + text.
+   ============================================================================= */
+.aos-status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--aos-space-1);
+  font-size: var(--aos-text-xs);
+  font-weight: var(--aos-weight-emphasize);
+}
+.aos-status[data-state="verified"] {
+  color: var(--aos-verified);
+}
+.aos-status[data-state="unverified"] {
+  color: var(--aos-unverified);
+}
+.aos-status[data-state="failed"] {
+  color: var(--aos-failed);
+}
+.aos-status[data-state="running"] {
+  color: var(--aos-running);
+}
+.aos-status[data-state="idle"] {
+  color: var(--aos-idle);
+}
+
+/* Resource meter. Neutral fill; only the critical threshold turns red.
+   Amber is never used here — see Amber Means Unverified Rule. */
+.aos-meter {
+  height: var(--aos-meter-height);
+  border-radius: var(--aos-meter-track-radius);
+  background: var(--aos-meter-track);
+  overflow: hidden;
+}
+.aos-meter > span {
+  display: block;
+  height: 100%;
+  background: var(--aos-meter-fill);
+}
+.aos-meter[data-critical="true"] > span {
+  background: var(--aos-meter-fill-critical);
+}
+
+/* =============================================================================
+   MOTION
+   ============================================================================= */
+.aos-transition {
+  transition-duration: var(--aos-motion-fast);
+  transition-timing-function: var(--aos-ease-standard);
+  transition-property: background-color, border-color, color, box-shadow, opacity;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --aos-motion-instant: 0ms;
+    --aos-motion-fast: 0ms;
+    --aos-motion-base: 0ms;
+    --aos-motion-slow: 0ms;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* =============================================================================
+   ACCESSIBILITY
+   ============================================================================= */
+
+/* Screen-reader-only text. Used for icon-only button labels and status text. */
+.aos-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Minimum 44x44 touch target without inflating the visual control. */
+.aos-hit {
+  position: relative;
+}
+.aos-hit::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  min-width: 44px;
+  min-height: 44px;
+  transform: translate(-50%, -50%);
+}

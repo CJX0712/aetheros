@@ -1,0 +1,14 @@
+{
+  "name": "@aetheros/ui",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Interface layer. Icons come from @tabler/icons 3.46.0 exclusively; names are resolved by scripts/check-icons.mjs.",
+  "license": "MIT",
+  "scripts": {
+    "check:icons": "node ../../scripts/check-icons.mjs"
+  },
+  "dependencies": {
+    "@tabler/icons": "3.46.0"
+  }
+}

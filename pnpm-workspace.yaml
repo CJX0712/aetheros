@@ -1,0 +1,11 @@
+# pnpm workspace - aetheros
+# 包清单锁定为四个：core（运行时内核）/ cli（agentos 可执行）/ demo（零依赖单文件 HTML）/ ui（界面层）
+packages:
+  - packages/core
+  - packages/cli
+  - packages/demo
+  - packages/ui
+
+# 只有 @tabler/icons 需要从 registry 取原始 SVG 元数据做图标名解析（ADR-014）
+# 其余一律不加依赖：core 的推理/存储依赖由架构师在 Spec 锁定后再补
+onlyBuiltDependencies: []

@@ -1,0 +1,1259 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>AetherOS — local agent operating system · demo engine</title>
+<meta name="description" content="AetherOS demo engine: trace waterfall, RAG evidence chain, skill evolution, local models and resources. Zero-dependency single file." />
+<style>
+/* =============================================================================
+   AetherOS — single-file demo engine (visual skeleton)
+   Zero dependency: no CDN, no runtime icon library, no build step. Open via file://
+   Icons: Tabler Icons 3.46.0 (MIT), inlined as <symbol> — see sprite at top of body.
+   Copy source: docs/design/states-copy.md (UI copy is English).
+   Every colour goes through var(--aos-*); radius capped at 8px; no emoji; no bounce easing.
+   ============================================================================= */
+
+:root {
+  color-scheme: dark;
+
+  /* ---- primitive: cool neutral graphite ---- */
+  --aos-neutral-1000: #07090a;
+  --aos-neutral-950: #0a0d0e;
+  --aos-neutral-900: #0e1214;
+  --aos-neutral-850: #121618;
+  --aos-neutral-800: #181c1e;
+  --aos-neutral-700: #20262a;
+  --aos-neutral-600: #2a3134;
+  --aos-neutral-400: #7a8488;
+  --aos-neutral-300: #8a9498;
+  --aos-neutral-200: #b4bdc0;
+  --aos-neutral-50: #e6ebec;
+
+  /* ---- primitive: cool light neutral ---- */
+  --aos-paper-50: #f7f9f9;
+  --aos-paper-100: #ffffff;
+  --aos-paper-200: #f1f4f4;
+  --aos-paper-300: #e9edee;
+  --aos-paper-400: #d5dbdd;
+  --aos-paper-700: #767f82;
+  --aos-paper-800: #5f6a6e;
+  --aos-paper-850: #3c464a;
+  --aos-paper-900: #0f1416;
+
+  /* ---- primitive: trace cyan ---- */
+  --aos-cyan-900: #04201d;
+  --aos-cyan-800: #0e7f75;
+  --aos-cyan-700: #12a79a;
+  --aos-cyan-500: #3ccfc1;
+  --aos-cyan-400: #4fdcd0;
+
+  /* ---- primitive: evidence amber / grounded / failed ---- */
+  --aos-amber-600: #c4842a;
+  --aos-amber-500: #e8a33d;
+  --aos-green-700: #2f7a4a;
+  --aos-green-500: #57b87a;
+  --aos-red-700: #a8352e;
+  --aos-red-500: #e5544b;
+
+  /* ---- primitive: effect ---- */
+  --aos-scrim: rgba(0, 0, 0, 0.72);
+  --aos-scrim-soft: rgba(0, 0, 0, 0.4);
+  --aos-hairline-light: rgba(255, 255, 255, 0.1);
+  --aos-hairline-soft-light: rgba(255, 255, 255, 0.06);
+  --aos-hairline-strong-light: rgba(255, 255, 255, 0.16);
+  --aos-hairline-dark: rgba(0, 0, 0, 0.16);
+  --aos-hairline-soft-dark: rgba(0, 0, 0, 0.06);
+  --aos-span-agent: rgba(60, 207, 193, 0.46);
+  --aos-span-llm: rgba(60, 207, 193, 0.38);
+  --aos-span-retrieval: rgba(60, 207, 193, 0.3);
+  --aos-span-tool: rgba(60, 207, 193, 0.22);
+  --aos-span-think: rgba(60, 207, 193, 0.14);
+  --aos-span-failed: rgba(229, 84, 75, 0.26);
+  --aos-tint-accent: rgba(60, 207, 193, 0.12);
+  --aos-tint-accent-light: rgba(14, 127, 117, 0.1);
+  --aos-focus-dark: rgba(60, 207, 193, 0.45);
+  --aos-focus-light: rgba(14, 127, 117, 0.35);
+
+  /* ---- semantic: surface ---- */
+  --aos-bg: var(--aos-neutral-950);
+  --aos-surface: var(--aos-neutral-850);
+  --aos-surface-raised: var(--aos-neutral-800);
+  --aos-surface-inset: var(--aos-neutral-1000);
+
+  /* ---- semantic: foreground ---- */
+  --aos-fg: var(--aos-neutral-50);
+  --aos-fg-secondary: var(--aos-neutral-200);
+  --aos-muted: var(--aos-neutral-300);
+  --aos-meta: var(--aos-neutral-400);
+
+  /* ---- semantic: border ---- */
+  --aos-border: var(--aos-neutral-600);
+  --aos-border-soft: var(--aos-hairline-soft-light);
+  --aos-border-strong: var(--aos-hairline-strong-light);
+
+  /* ---- semantic: trace cyan (The Trace Is Cyan Rule) ---- */
+  --aos-accent: var(--aos-cyan-500);
+  --aos-accent-hover: var(--aos-cyan-400);
+  --aos-accent-on: var(--aos-cyan-900);
+  --aos-accent-soft: var(--aos-tint-accent);
+
+  /* ---- semantic: evidence amber (Amber Means Unverified Rule) ---- */
+  --aos-signal-amber: var(--aos-amber-500);
+  --aos-unverified: var(--aos-signal-amber);
+
+  /* ---- semantic: status ---- */
+  --aos-verified: var(--aos-green-500);
+  --aos-failed: var(--aos-red-500);
+  --aos-running: var(--aos-cyan-500);
+  --aos-idle: var(--aos-neutral-400);
+
+  /* ---- semantic: meters (never amber — amber belongs to evidence) ---- */
+  --aos-meter-fill: var(--aos-neutral-200);
+  --aos-meter-fill-critical: var(--aos-red-500);
+  --aos-meter-track: var(--aos-neutral-1000);
+
+  /* ---- semantic: span fills (one hue, density graded) ---- */
+  --aos-span-stroke: var(--aos-cyan-400);
+  --aos-span-stroke-failed: var(--aos-red-500);
+
+  /* ---- semantic: typography ---- */
+  --aos-font-sans: "Geist", system-ui, -apple-system, "PingFang SC",
+    "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+  --aos-font-mono: "Commit Mono", "Sarasa Mono SC", "Cascadia Mono", Consolas,
+    "PingFang SC", monospace;
+
+  --aos-text-2xs: 0.6875rem;
+  --aos-text-xs: 0.75rem;
+  --aos-text-sm: 0.8125rem;
+  --aos-text-base: 0.875rem;
+  --aos-text-md: 1rem;
+  --aos-text-lg: 1.125rem;
+
+  --aos-weight-read: 400;
+  --aos-weight-emphasize: 510;
+  --aos-weight-announce: 590;
+
+  --aos-leading-body: 1.55;
+  --aos-leading-heading: 1.25;
+
+  --aos-tracking-caps: 0.08em;
+  --aos-tracking-display: -0.018em;
+
+  /* ---- semantic: space ---- */
+  --aos-space-1: 0.25rem;
+  --aos-space-2: 0.5rem;
+  --aos-space-3: 0.75rem;
+  --aos-space-4: 1rem;
+  --aos-space-5: 1.25rem;
+  --aos-space-6: 1.5rem;
+  --aos-space-8: 2rem;
+  --aos-space-12: 3rem;
+
+  /* ---- semantic: radius (hard ceiling 8px) ---- */
+  --aos-radius-sm: 0.25rem;
+  --aos-radius-md: 0.375rem;
+  --aos-radius-lg: 0.5rem;
+  --aos-radius-pill: 9999px;
+
+  /* ---- semantic: elevation ---- */
+  --aos-elev-flat: none;
+  --aos-elev-ring: inset 0 0 0 1px var(--aos-border);
+  --aos-elev-raised: inset 0 0 0 1px var(--aos-border),
+    0 1px 2px var(--aos-scrim-soft);
+  --aos-elev-overlay: 0 0 0 1px var(--aos-hairline-light),
+    0 8px 24px -8px var(--aos-scrim);
+  --aos-focus-ring: 0 0 0 3px var(--aos-focus-dark);
+
+  /* ---- semantic: motion ---- */
+  --aos-motion-instant: 80ms;
+  --aos-motion-fast: 120ms;
+  --aos-motion-base: 180ms;
+  --aos-motion-slow: 260ms;
+  --aos-ease-standard: cubic-bezier(0.2, 0, 0, 1);
+
+  /* ---- semantic: z ---- */
+  --aos-z-sticky: 10;
+
+  /* ---- component ---- */
+  --aos-layout-rail-width: 15rem;
+  --aos-layout-evidence-width: 22.5rem;
+  --aos-layout-topbar-height: 3rem;
+  --aos-trace-row-height: 1.75rem;
+  --aos-trace-indent-step: 0.75rem;
+  --aos-trace-bar-height: 0.625rem;
+  --aos-trace-dock-height: 15rem;
+  --aos-meter-height: 6px;
+  --aos-meter-track-radius: 2px;
+}
+
+[data-theme="light"] {
+  color-scheme: light;
+  --aos-bg: var(--aos-paper-50);
+  --aos-surface: var(--aos-paper-100);
+  --aos-surface-raised: var(--aos-paper-200);
+  --aos-surface-inset: var(--aos-paper-300);
+  --aos-fg: var(--aos-paper-900);
+  --aos-fg-secondary: var(--aos-paper-850);
+  --aos-muted: var(--aos-paper-800);
+  --aos-meta: var(--aos-paper-700);
+  --aos-border: var(--aos-paper-400);
+  --aos-border-soft: var(--aos-hairline-soft-dark);
+  --aos-border-strong: var(--aos-hairline-dark);
+  --aos-accent: var(--aos-cyan-800);
+  --aos-accent-hover: var(--aos-cyan-700);
+  --aos-accent-on: var(--aos-paper-100);
+  --aos-accent-soft: var(--aos-tint-accent-light);
+  --aos-signal-amber: var(--aos-amber-600);
+  --aos-unverified: var(--aos-signal-amber);
+  --aos-verified: var(--aos-green-700);
+  --aos-failed: var(--aos-red-700);
+  --aos-running: var(--aos-cyan-800);
+  --aos-idle: var(--aos-paper-700);
+  --aos-meter-fill: var(--aos-paper-850);
+  --aos-meter-fill-critical: var(--aos-red-700);
+  --aos-meter-track: var(--aos-paper-300);
+  --aos-focus-ring: 0 0 0 3px var(--aos-focus-light);
+}
+
+*,
+*::before,
+*::after { box-sizing: border-box; }
+html, body { height: 100%; }
+
+body {
+  margin: 0;
+  background: var(--aos-bg);
+  color: var(--aos-fg);
+  font-family: var(--aos-font-sans);
+  font-size: var(--aos-text-base);
+  font-weight: var(--aos-weight-read);
+  line-height: var(--aos-leading-body);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: none;
+  box-shadow: var(--aos-focus-ring);
+  border-radius: var(--aos-radius-sm);
+}
+
+/* ---------- icons: Tabler Icons 3.46.0 inlined ---------- */
+.aos-sprite { position: absolute; width: 0; height: 0; overflow: hidden; }
+
+.aos-ic {
+  width: 20px; height: 20px; flex: none;
+  fill: none; stroke: none;
+  stroke-linecap: round; stroke-linejoin: round;
+  vertical-align: -0.15em;
+}
+/* Stroke width MUST stay constant at 2.
+   Tabler authors stroke in 24 viewBox USER UNITS, and CSS stroke-width on an SVG
+   is also in user units — the viewBox then scales it again. So a rendered-pixel
+   value such as 1.33 at 16px would double-scale to 1.33 x 16/24 = 0.89px and the
+   icon would nearly vanish. Leave --ic-sw at 2 and let viewBox do the 24 -> size
+   scaling: 2 user units render as 2px at 24px and 1.33px at 16px, which is the
+   optically tuned ratio Tabler ships. Only change this constant if a 1x-screen
+   16px screenshot proves the icons are unreadable. */
+.aos-ic * { stroke-width: var(--ic-sw, 2); }
+.aos-ic-16 { width: 16px; height: 16px; }
+.aos-ic-20 { width: 20px; height: 20px; }
+.aos-ic-24 { width: 24px; height: 24px; }
+
+/* ---------- type utilities ---------- */
+.aos-mono,
+.aos-duration,
+.aos-metric,
+.aos-delta,
+.aos-id {
+  font-family: var(--aos-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+.aos-duration { text-align: right; color: var(--aos-fg-secondary); }
+.aos-metric { color: var(--aos-fg); }
+.aos-delta[data-sign="up"] { color: var(--aos-verified); }
+.aos-delta[data-sign="down"] { color: var(--aos-failed); }
+.aos-id { color: var(--aos-meta); font-size: var(--aos-text-xs); overflow-wrap: anywhere; }
+.aos-label-caps {
+  font-size: var(--aos-text-2xs);
+  font-weight: var(--aos-weight-emphasize);
+  text-transform: uppercase;
+  letter-spacing: var(--aos-tracking-caps);
+  color: var(--aos-meta);
+}
+
+/* ---------- buttons ---------- */
+.aos-btn {
+  display: inline-flex; align-items: center; gap: var(--aos-space-1);
+  height: 1.75rem; padding: 0 var(--aos-space-3);
+  border: 1px solid transparent; border-radius: var(--aos-radius-sm);
+  font-family: inherit; font-size: var(--aos-text-sm);
+  font-weight: var(--aos-weight-emphasize); cursor: pointer;
+  transition: background-color var(--aos-motion-fast) var(--aos-ease-standard),
+    color var(--aos-motion-fast) var(--aos-ease-standard),
+    border-color var(--aos-motion-fast) var(--aos-ease-standard);
+}
+.aos-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.aos-btn-trace { background: var(--aos-accent); color: var(--aos-accent-on); }
+.aos-btn-trace:hover:not(:disabled) { background: var(--aos-accent-hover); }
+.aos-btn-cta { background: var(--aos-fg); color: var(--aos-bg); }
+.aos-btn-cta:hover:not(:disabled) { background: var(--aos-fg-secondary); }
+.aos-btn-secondary { background: transparent; color: var(--aos-fg-secondary); border-color: var(--aos-border); }
+.aos-btn-secondary:hover:not(:disabled) { background: var(--aos-surface-raised); color: var(--aos-fg); }
+.aos-btn-danger { background: transparent; color: var(--aos-failed); border-color: var(--aos-failed); }
+.aos-btn-danger:hover:not(:disabled) { background: var(--aos-failed); color: var(--aos-bg); }
+.aos-btn-icon {
+  width: 1.75rem; height: 1.75rem; padding: 0; justify-content: center;
+  background: transparent; color: var(--aos-muted); border-color: transparent;
+}
+.aos-btn-icon:hover:not(:disabled) { background: var(--aos-surface-raised); color: var(--aos-fg); }
+.aos-btn-icon[aria-pressed="true"] { color: var(--aos-accent); }
+
+/* ---------- status ---------- */
+.aos-status { display: inline-flex; align-items: center; gap: var(--aos-space-1); font-size: var(--aos-text-xs); font-weight: var(--aos-weight-emphasize); }
+.aos-status[data-state="verified"] { color: var(--aos-verified); }
+.aos-status[data-state="unverified"] { color: var(--aos-unverified); }
+.aos-status[data-state="failed"] { color: var(--aos-failed); }
+.aos-status[data-state="running"] { color: var(--aos-running); }
+.aos-status[data-state="idle"] { color: var(--aos-idle); }
+.aos-dot { width: 6px; height: 6px; border-radius: var(--aos-radius-pill); background: currentColor; flex: none; }
+.aos-dot[data-state="running"] { animation: aos-pulse 1.2s var(--aos-ease-standard) infinite; }
+@keyframes aos-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+
+/* ---------- meter ---------- */
+.aos-meter { height: var(--aos-meter-height); border-radius: var(--aos-meter-track-radius); background: var(--aos-meter-track); overflow: hidden; }
+.aos-meter > span { display: block; height: 100%; background: var(--aos-meter-fill); }
+.aos-meter[data-critical="true"] > span { background: var(--aos-meter-fill-critical); }
+
+/* ---------- layout ---------- */
+.topbar {
+  position: sticky; top: 0; z-index: var(--aos-z-sticky);
+  display: flex; align-items: center; gap: var(--aos-space-3);
+  height: var(--aos-layout-topbar-height); padding: 0 var(--aos-space-4);
+  background: var(--aos-bg); border-bottom: 1px solid var(--aos-border);
+}
+.brand { display: flex; align-items: center; gap: var(--aos-space-2); font-weight: var(--aos-weight-announce); font-size: var(--aos-text-md); }
+.trust {
+  display: inline-flex; align-items: center; gap: var(--aos-space-1);
+  height: 1.375rem; padding: 0 var(--aos-space-2);
+  border-radius: var(--aos-radius-sm);
+  background: var(--aos-surface); box-shadow: var(--aos-elev-ring);
+  font-size: var(--aos-text-xs); color: var(--aos-fg-secondary);
+}
+.trust .aos-ic { color: var(--aos-verified); }
+.topbar .spacer { flex: 1; }
+
+.shell {
+  display: grid;
+  grid-template-columns: var(--aos-layout-rail-width) minmax(0, 1fr) var(--aos-layout-evidence-width);
+  min-height: calc(100vh - var(--aos-layout-topbar-height));
+}
+.rail { border-right: 1px solid var(--aos-border); }
+.workbench { min-width: 0; border-right: 1px solid var(--aos-border); display: flex; flex-direction: column; }
+.evidence { background: var(--aos-bg); }
+
+.section-head {
+  display: flex; align-items: center; gap: var(--aos-space-2);
+  height: var(--aos-layout-topbar-height); padding: 0 var(--aos-space-3);
+  border-bottom: 1px solid var(--aos-border-soft);
+}
+
+.viewnav { display: flex; gap: var(--aos-space-1); padding: var(--aos-space-2); }
+.viewnav button {
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px;
+  padding: var(--aos-space-1) 0; border: 0; border-radius: var(--aos-radius-sm);
+  background: transparent; color: var(--aos-muted);
+  font-family: inherit; font-size: var(--aos-text-2xs); cursor: pointer;
+}
+.viewnav button:hover { background: var(--aos-surface); color: var(--aos-fg-secondary); }
+.viewnav button[aria-selected="true"] { background: var(--aos-surface-raised); color: var(--aos-fg); }
+
+.rail-list { list-style: none; margin: 0; padding: 0; }
+.rail-list > li + li { border-top: 1px solid var(--aos-border-soft); }
+.rail-item {
+  display: block; width: 100%; text-align: left;
+  padding: var(--aos-space-2) var(--aos-space-3);
+  border: 0; background: transparent; color: inherit;
+  font-family: inherit; cursor: pointer;
+}
+.rail-item:hover { background: var(--aos-surface); }
+.rail-item[aria-current="true"] { background: var(--aos-accent-soft); box-shadow: inset 2px 0 0 var(--aos-accent); }
+.rail-item .title { display: block; font-size: var(--aos-text-sm); color: var(--aos-fg); }
+.rail-item .sub { display: flex; align-items: center; gap: var(--aos-space-2); margin-top: 2px; font-size: var(--aos-text-xs); color: var(--aos-meta); }
+
+.runhead { display: flex; align-items: center; gap: var(--aos-space-3); padding: var(--aos-space-3); border-bottom: 1px solid var(--aos-border-soft); flex-wrap: wrap; }
+.runhead .meta-row { display: flex; align-items: baseline; gap: var(--aos-space-3); font-size: var(--aos-text-xs); color: var(--aos-meta); flex-wrap: wrap; }
+.runhead .actions { margin-left: auto; display: flex; gap: var(--aos-space-1); }
+
+.waterfall { list-style: none; margin: 0; padding: 0; overflow: auto; }
+.wf-head {
+  display: grid; grid-template-columns: minmax(0, 1fr) 3rem 4.5rem;
+  align-items: center; gap: var(--aos-space-2);
+  height: 1.75rem; padding: 0 var(--aos-space-3);
+  border-bottom: 1px solid var(--aos-border-strong);
+  position: sticky; top: 0; background: var(--aos-surface-raised); z-index: 1;
+}
+.wf-row {
+  display: grid; grid-template-columns: minmax(0, 1fr) 3rem 4.5rem;
+  align-items: center; gap: var(--aos-space-2);
+  min-height: var(--aos-trace-row-height); padding: 0 var(--aos-space-3);
+  border: 0; border-top: 1px solid var(--aos-border-soft);
+  background: transparent; width: 100%; text-align: left;
+  font-family: inherit; color: inherit; cursor: pointer;
+}
+.wf-row:hover { background: var(--aos-surface); }
+.wf-row[aria-selected="true"] { background: var(--aos-accent-soft); }
+.wf-row[aria-selected="true"] .wf-name { color: var(--aos-fg); }
+.wf-label { display: flex; align-items: center; gap: var(--aos-space-2); min-width: 0; }
+.wf-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--aos-text-sm); color: var(--aos-fg-secondary); }
+.wf-kind { font-size: var(--aos-text-2xs); color: var(--aos-meta); flex: none; }
+.wf-track { position: relative; height: var(--aos-trace-bar-height); }
+.wf-bar {
+  position: absolute; top: 0; height: 100%; min-width: 2px;
+  border-radius: 2px; background: var(--aos-span-llm);
+  border-top: 1px solid var(--aos-span-stroke);
+}
+.wf-row[data-kind="agent"] .wf-bar { background: var(--aos-span-agent); }
+.wf-row[data-kind="llm"] .wf-bar { background: var(--aos-span-llm); }
+.wf-row[data-kind="retrieval"] .wf-bar { background: var(--aos-span-retrieval); }
+.wf-row[data-kind="tool"] .wf-bar { background: var(--aos-span-tool); }
+.wf-row[data-kind="think"] .wf-bar { background: var(--aos-span-think); }
+.wf-row[data-status="failed"] .wf-bar { background: var(--aos-span-failed); border-top-color: var(--aos-span-stroke-failed); }
+.wf-dur { font-size: var(--aos-text-xs); }
+.wf-empty { padding: var(--aos-space-6) var(--aos-space-3); color: var(--aos-muted); font-size: var(--aos-text-sm); }
+.wf-empty .cmd {
+  display: inline-flex; align-items: center; gap: var(--aos-space-2);
+  margin: var(--aos-space-2) 0; padding: var(--aos-space-1) var(--aos-space-2);
+  background: var(--aos-surface-inset); border-radius: var(--aos-radius-sm);
+  font-family: var(--aos-font-mono); font-size: var(--aos-text-xs); color: var(--aos-fg-secondary);
+}
+
+.dock { margin-top: auto; border-top: 1px solid var(--aos-border); background: var(--aos-surface); display: flex; flex-direction: column; min-height: var(--aos-trace-dock-height); }
+.tabs { display: flex; gap: var(--aos-space-1); padding: var(--aos-space-2) var(--aos-space-3) 0; }
+.tabs button {
+  height: 1.5rem; padding: 0 var(--aos-space-2); border: 0; border-radius: var(--aos-radius-sm);
+  background: transparent; color: var(--aos-muted); font-family: inherit; font-size: var(--aos-text-xs); cursor: pointer;
+}
+.tabs button:hover { color: var(--aos-fg-secondary); background: var(--aos-surface-raised); }
+.tabs button[aria-selected="true"] { color: var(--aos-fg); background: var(--aos-surface-raised); box-shadow: inset 0 -2px 0 var(--aos-accent); }
+.dock-body { padding: var(--aos-space-3); overflow: auto; flex: 1; }
+.pre {
+  margin: 0; padding: var(--aos-space-3);
+  background: var(--aos-surface-inset); border-radius: var(--aos-radius-sm);
+  font-family: var(--aos-font-mono); font-size: var(--aos-text-xs);
+  color: var(--aos-fg-secondary); white-space: pre-wrap; overflow-wrap: anywhere;
+}
+
+.evidence-summary { display: flex; flex-wrap: wrap; gap: var(--aos-space-3); padding: var(--aos-space-3); border-bottom: 1px solid var(--aos-border-soft); font-size: var(--aos-text-xs); color: var(--aos-muted); }
+.answer { padding: var(--aos-space-3); border-bottom: 1px solid var(--aos-border-soft); font-size: var(--aos-text-sm); color: var(--aos-fg); }
+.cite {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 1rem; height: 1rem; padding: 0 var(--aos-space-1); margin: 0 1px;
+  vertical-align: 1px; border: 1px solid var(--aos-border); border-radius: var(--aos-radius-sm);
+  background: var(--aos-surface-raised); color: var(--aos-fg-secondary);
+  font-family: var(--aos-font-mono); font-size: var(--aos-text-2xs); cursor: pointer;
+}
+.cite:hover, .cite[data-active="true"] { border-color: var(--aos-accent); background: var(--aos-accent-soft); color: var(--aos-fg); }
+
+.ev-list { list-style: none; margin: 0; padding: 0; }
+.ev-card { padding: var(--aos-space-3); border-top: 1px solid var(--aos-border-soft); transition: background-color var(--aos-motion-base) var(--aos-ease-standard), box-shadow var(--aos-motion-base) var(--aos-ease-standard); }
+.ev-card[data-active="true"] { background: var(--aos-surface-raised); box-shadow: inset 0 0 0 1px var(--aos-accent); }
+.ev-card .ev-top { display: flex; align-items: center; gap: var(--aos-space-2); }
+.ev-card .ev-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--aos-text-sm); color: var(--aos-fg); }
+.ev-card .ev-quote { margin: var(--aos-space-2) 0; font-size: var(--aos-text-xs); color: var(--aos-fg-secondary); border-left: 2px solid var(--aos-border); padding-left: var(--aos-space-2); }
+.ev-card mark { background: var(--aos-accent-soft); color: var(--aos-fg); border-bottom: 1px solid var(--aos-accent); padding: 0 1px; }
+.ev-card[data-active="true"] mark { animation: aos-mark-pulse var(--aos-motion-base) var(--aos-ease-standard) 1; }
+@keyframes aos-mark-pulse { from { background: var(--aos-accent); } to { background: var(--aos-accent-soft); } }
+.ev-card .ev-meta { display: flex; flex-wrap: wrap; gap: var(--aos-space-2); font-size: var(--aos-text-xs); color: var(--aos-meta); }
+.ev-card .ev-actions { display: flex; gap: var(--aos-space-1); margin-top: var(--aos-space-2); }
+.rel-bar { width: 3rem; height: 4px; border-radius: 2px; background: var(--aos-meter-track); overflow: hidden; flex: none; }
+.rel-bar > span { display: block; height: 100%; background: var(--aos-accent); }
+
+.data-table { width: 100%; border-collapse: collapse; font-size: var(--aos-text-sm); }
+.data-table th {
+  height: 2rem; padding: 0 var(--aos-space-3); text-align: left;
+  font-size: var(--aos-text-2xs); font-weight: var(--aos-weight-emphasize);
+  text-transform: uppercase; letter-spacing: var(--aos-tracking-caps);
+  color: var(--aos-meta); border-bottom: 1px solid var(--aos-border-strong);
+  background: var(--aos-surface-raised);
+}
+.data-table td { height: 2rem; padding: 0 var(--aos-space-3); border-top: 1px solid var(--aos-border-soft); color: var(--aos-fg-secondary); }
+.data-table td:first-child { color: var(--aos-fg); }
+.spark { display: inline-flex; align-items: flex-end; gap: 2px; height: 1rem; }
+.spark i { display: block; width: 2px; background: var(--aos-accent); }
+.lineage { padding: var(--aos-space-3); }
+.lineage-node { display: flex; gap: var(--aos-space-3); padding: var(--aos-space-3) 0; border-top: 1px solid var(--aos-border-soft); }
+.lineage-node .ln-dot { width: 8px; height: 8px; margin-top: 6px; border-radius: var(--aos-radius-pill); background: var(--aos-accent); flex: none; }
+.lineage-node[data-current="true"] .ln-dot { box-shadow: 0 0 0 3px var(--aos-accent-soft); }
+
+.stat-strip {
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--aos-space-3);
+  padding: 0 var(--aos-space-3); min-height: var(--aos-layout-topbar-height);
+  border-bottom: 1px solid var(--aos-border-soft);
+  font-size: var(--aos-text-sm); color: var(--aos-fg-secondary);
+}
+.stat-strip .sep { color: var(--aos-meta); }
+.note { font-size: var(--aos-text-xs); color: var(--aos-muted); }
+
+@media (max-width: 1024px) {
+  .shell { grid-template-columns: 4.5rem minmax(0, 1fr); }
+  .evidence { grid-column: 1 / -1; border-top: 1px solid var(--aos-border); }
+  .viewnav { flex-direction: column; }
+  .rail-item .title, .rail-item .sub { display: none; }
+}
+@media (max-width: 768px) {
+  .shell { grid-template-columns: 1fr; }
+  .rail { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --aos-motion-instant: 0ms; --aos-motion-fast: 0ms; --aos-motion-base: 0ms; --aos-motion-slow: 0ms; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important; animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important; scroll-behavior: auto !important;
+  }
+}
+</style>
+</head>
+<body>
+
+<!-- =============================================================================
+     Tabler Icons 3.46.0 (MIT) — inlined sprite
+     outline: 24x24 / stroke-width 2 / round caps  ·  filled: matching solid variants
+     sizes 16 / 20 / 24px, stroke = size/12 via --ic-sw
+     ============================================================================= -->
+<svg class="aos-sprite" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+  <symbol id="i-player-play" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4v16l13-8z"/></symbol>
+  <symbol id="i-player-play-filled" viewBox="0 0 24 24"><path fill="currentColor" d="M6 4v16a1 1 0 0 0 1.524.852l13-8a1 1 0 0 0 0-1.704l-13-8A1 1 0 0 0 6 4"/></symbol>
+  <symbol id="i-player-stop" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 7a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2z"/></symbol>
+  <symbol id="i-player-stop-filled" viewBox="0 0 24 24"><path fill="currentColor" d="M17 4H7a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3V7a3 3 0 0 0-3-3"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10a7 7 0 1 0 14 0a7 7 0 1 0-14 0m18 11l-6-6"/></symbol>
+  <symbol id="i-tool" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 10h3V7L6.5 3.5a6 6 0 0 1 8 8l6 6a2 2 0 0 1-3 3l-6-6a6 6 0 0 1-8-8z"/></symbol>
+  <!-- i-brain removed: brain icon is banned (AI-template smell). think -> i-binary-tree-2, llm -> i-cpu. -->
+  <symbol id="i-quote" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 11H6a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v6q0 4-4 5m13-7h-4a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v6q0 4-4 5"/></symbol>
+  <symbol id="i-quote-filled" viewBox="0 0 24 24"><path fill="currentColor" d="M9 5a2 2 0 0 1 2 2v6c0 3.13-1.65 5.193-4.757 5.97a1 1 0 1 1-.486-1.94C7.984 16.473 9 15.203 9 13v-1H6a2 2 0 0 1-1.995-1.85L4 10V7a2 2 0 0 1 2-2zm9 0a2 2 0 0 1 2 2v6c0 3.13-1.65 5.193-4.757 5.97a1 1 0 1 1-.486-1.94C16.984 16.473 18 15.203 18 13v-1h-3a2 2 0 0 1-1.995-1.85L13 10V7a2 2 0 0 1 2-2z"/></symbol>
+  <symbol id="i-circle-check" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0-18 0"/><path d="m9 12l2 2l4-4"/></g></symbol>
+  <symbol id="i-circle-check-filled" viewBox="0 0 24 24"><path fill="currentColor" d="M17 3.34a10 10 0 1 1-14.995 8.984L2 12l.005-.324A10 10 0 0 1 17 3.34m-1.293 5.953a1 1 0 0 0-1.32-.083l-.094.083L11 12.585l-1.293-1.292l-.094-.083a1 1 0 0 0-1.403 1.403l.083.094l2 2l.094.083a1 1 0 0 0 1.226 0l.094-.083l4-4l.083-.094a1 1 0 0 0-.083-1.32"/></symbol>
+  <symbol id="i-circle-dashed" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.56 3.69a9 9 0 0 0-2.92 1.95M3.69 8.56A9 9 0 0 0 3 12m.69 3.44a9 9 0 0 0 1.95 2.92m2.92 1.95A9 9 0 0 0 12 21m3.44-.69a9 9 0 0 0 2.92-1.95m1.95-2.92A9 9 0 0 0 21 12m-.69-3.44a9 9 0 0 0-1.95-2.92m-2.92-1.95A9 9 0 0 0 12 3"/></symbol>
+  <symbol id="i-alert-triangle" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v4m-1.637-9.409L2.257 17.125a1.914 1.914 0 0 0 1.636 2.871h16.214a1.914 1.914 0 0 0 1.636-2.87L13.637 3.59a1.914 1.914 0 0 0-3.274 0M12 16h.01"/></symbol>
+  <symbol id="i-alert-triangle-filled" viewBox="0 0 24 24"><path fill="currentColor" d="M12 1.67c.955 0 1.845.467 2.39 1.247l.105.16l8.114 13.548a2.914 2.914 0 0 1-2.307 4.363l-.195.008H3.882a2.914 2.914 0 0 1-2.582-4.2l.099-.185l8.11-13.538A2.91 2.91 0 0 1 12 1.67M12.01 15l-.127.007a1 1 0 0 0 0 1.986L12 17l.127-.007a1 1 0 0 0 0-1.986zM12 8a1 1 0 0 0-.993.883L11 9v4l.007.117a1 1 0 0 0 1.986 0L13 13V9l-.007-.117A1 1 0 0 0 12 8"/></symbol>
+  <symbol id="i-circle-x" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0-18 0m7-2l4 4m0-4l-4 4"/></symbol>
+  <symbol id="i-binary-tree-2" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 6a2 2 0 1 0-4 0a2 2 0 0 0 4 0m-7 8a2 2 0 1 0-4 0a2 2 0 0 0 4 0m14 0a2 2 0 1 0-4 0a2 2 0 0 0 4 0m-7 4a2 2 0 1 0-4 0a2 2 0 0 0 4 0M12 8v8m-5.684-3.504l4.368-4.992m7 4.992l-4.366-4.99"/></symbol>
+  <symbol id="i-server" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v2a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3zm0 8a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v2a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3zm4-7v.01M7 16v.01"/></symbol>
+  <symbol id="i-cpu" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M5 6a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1z"/><path d="M9 9h6v6H9zm-6 1h2m-2 4h2m5-11v2m4-2v2m7 5h-2m2 4h-2m-5 7v-2m-4 2v-2"/></g></symbol>
+  <symbol id="i-timeline" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="m4 16l6-7l5 5l5-6"/><path d="M14 14a1 1 0 1 0 2 0a1 1 0 1 0-2 0M9 9a1 1 0 1 0 2 0a1 1 0 1 0-2 0m-6 7a1 1 0 1 0 2 0a1 1 0 1 0-2 0m16-8a1 1 0 1 0 2 0a1 1 0 1 0-2 0"/></g></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0-18 0"/><path d="M12 7v5l3 3"/></g></symbol>
+  <symbol id="i-terminal-2" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="m8 9l3 3l-3 3m5 0h3"/><path d="M3 6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></g></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M7 9.667A2.667 2.667 0 0 1 9.667 7h8.666A2.667 2.667 0 0 1 21 9.667v8.666A2.667 2.667 0 0 1 18.333 21H9.667A2.667 2.667 0 0 1 7 18.333z"/><path d="M4.012 16.737A2 2 0 0 1 3 15V5c0-1.1.9-2 2-2h10c.75 0 1.158.385 1.5 1"/></g></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2M7 11l5 5l5-5m-5-7v12"/></symbol>
+  <symbol id="i-filter" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4h16v2.172a2 2 0 0 1-.586 1.414L15 12v7l-6 2v-8.5L4.52 7.572A2 2 0 0 1 4 6.227z"/></symbol>
+  <symbol id="i-chevron-right" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m9 6l6 6l-6 6"/></symbol>
+  <symbol id="i-chevron-down" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m6 9l6 6l6-6"/></symbol>
+  <symbol id="i-restore" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M3.06 13a9 9 0 1 0 .49-4.087"/><path d="M3 4.001v5h5M11 12a1 1 0 1 0 2 0a1 1 0 1 0-2 0"/></g></symbol>
+  <symbol id="i-settings" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 0 0-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 0 0-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 0 0-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 0 0-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 0 0 1.066-2.573c-.94-1.543.826-3.31 2.37-2.37c1 .608 2.296.07 2.572-1.065"/><path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0-6 0"/></g></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 6L6 18M6 6l12 12"/></symbol>
+  <symbol id="i-file-diff" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2m-5-11v4m-2-2h4m-4 5h4"/></g></symbol>
+  <symbol id="i-history" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M12 8v4l2 2"/><path d="M3.05 11a9 9 0 1 1 .5 4m-.5 5v-5h5"/></g></symbol>
+  <symbol id="i-package" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m12 3l8 4.5v9L12 21l-8-4.5v-9zm0 9l8-4.5M12 12v9m0-9L4 7.5m12-2.25l-8 4.5"/></symbol>
+  <symbol id="i-shield-check" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.46 20.846A12 12 0 0 1 3.5 6A12 12 0 0 0 12 3a12 12 0 0 0 8.5 3a12 12 0 0 1-.09 7.06M15 19l2 2l4-4"/></symbol>
+  <symbol id="i-arrow-up" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v14m6-8l-6-6m-6 6l6-6"/></symbol>
+  <symbol id="i-arrow-down" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v14m6-6l-6 6m-6-6l6 6"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 11A8.1 8.1 0 0 0 4.5 9M4 5v4h4m-4 4a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"/></symbol>
+  <symbol id="i-cloud-off" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.58 5.548q.361-.166.752-.286c1.88-.572 3.956-.193 5.444 1c1.488 1.19 2.162 3.007 1.77 4.769h.99c1.913 0 3.464 1.56 3.464 3.486c0 .957-.383 1.824-1.003 2.454M18 18.004H6.657C4.085 18 2 15.993 2 13.517s2.085-4.482 4.657-4.482c.13-.582.37-1.128.7-1.62M3 3l18 18"/></symbol>
+  <symbol id="i-activity" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12h4l3 8l4-16l3 8h4"/></symbol>
+  <symbol id="i-file-search" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M12 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v4.5"/><path d="M14 17.5a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0-5 0m4.5 2L21 22"/></g></symbol>
+  <symbol id="i-blocks" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 4a1 1 0 0 1 1-1h5a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1h-5a1 1 0 0 1-1-1zM3 14h12a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v12"/></symbol>
+  <symbol id="i-git-branch" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M5 18a2 2 0 1 0 4 0a2 2 0 1 0-4 0M5 6a2 2 0 1 0 4 0a2 2 0 1 0-4 0m10 0a2 2 0 1 0 4 0a2 2 0 1 0-4 0M7 8v8m2 2h6a2 2 0 0 0 2-2v-5"/><path d="m14 14l3-3l3 3"/></g></symbol>
+  <symbol id="i-gauge" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0-18 0"/><path d="M11 12a1 1 0 1 0 2 0a1 1 0 0 0-2 0m2.41-1.41L16 8m-9 4a5 5 0 0 1 5-5"/></g></symbol>
+  <symbol id="i-list-tree" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 6h11m-8 6h8m-5 6h5M5 6v.01M8 12v.01M11 18v.01"/></symbol>
+  <symbol id="i-layout-dashboard" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 4h4a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1m0 12h4a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-2a1 1 0 0 1 1-1m10-4h4a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1v-6a1 1 0 0 1 1-1m0-8h4a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1"/></symbol>
+</svg>
+
+<header class="topbar">
+  <span class="brand">
+    <svg class="aos-ic aos-ic-20" aria-hidden="true"><use href="#i-timeline"></use></svg>
+    AetherOS
+  </span>
+  <span class="trust" title="Runs entirely on this machine. No telemetry.">
+    <svg class="aos-ic aos-ic-16" aria-hidden="true"><use href="#i-cloud-off"></use></svg>
+    Local only · <span class="aos-metric" id="egress-count">0</span> outbound requests
+  </span>
+  <span class="spacer"></span>
+  <button class="aos-btn aos-btn-icon" id="theme-toggle" type="button" aria-pressed="false" aria-label="Switch to light theme" title="Switch to light theme">
+    <svg class="aos-ic aos-ic-20" aria-hidden="true"><use href="#i-settings"></use></svg>
+  </button>
+</header>
+
+<div class="shell">
+  <aside class="rail" aria-label="Views and lists">
+    <nav class="viewnav" role="tablist" aria-label="Primary views">
+      <button role="tab" type="button" data-view="trace" aria-selected="true">
+        <svg class="aos-ic aos-ic-20" aria-hidden="true"><use href="#i-activity"></use></svg>Runs
+      </button>
+      <button role="tab" type="button" data-view="skills" aria-selected="false">
+        <svg class="aos-ic aos-ic-20" aria-hidden="true"><use href="#i-binary-tree-2"></use></svg>Skills
+      </button>
+      <button role="tab" type="button" data-view="models" aria-selected="false">
+        <svg class="aos-ic aos-ic-20" aria-hidden="true"><use href="#i-cpu"></use></svg>Models
+      </button>
+    </nav>
+    <div class="section-head"><span class="aos-label-caps" id="rail-caption">Runs</span></div>
+    <ul class="rail-list" id="rail-list"></ul>
+  </aside>
+
+  <main class="workbench">
+    <section id="view-trace" data-view-panel="trace">
+      <div class="runhead">
+        <div>
+          <div style="display:flex;align-items:center;gap:var(--aos-space-2)">
+            <span class="aos-status" id="run-state" data-state="idle">
+              <span class="aos-dot" data-state="idle"></span><span id="run-state-text">Idle</span>
+            </span>
+            <span class="aos-metric" id="run-id">run-8f3c1a</span>
+          </div>
+          <div class="meta-row">
+            <span>Add char-offset evidence anchors to glassbox</span>
+            <span class="aos-mono" id="run-wall">0.00s</span>
+            <span class="aos-mono" id="run-tokens">0 tok</span>
+            <span>qwen2.5-7b-q4_K_M</span>
+            <span class="aos-mono" id="run-spans">0 spans</span>
+          </div>
+        </div>
+        <div class="actions">
+          <button class="aos-btn aos-btn-trace" id="btn-run" type="button">
+            <svg class="aos-ic aos-ic-16" aria-hidden="true"><use href="#i-player-play-filled"></use></svg>Start run
+          </button>
+          <button class="aos-btn aos-btn-secondary" id="btn-replay" type="button">
+            <svg class="aos-ic aos-ic-16" aria-hidden="true"><use href="#i-restore"></use></svg>Replay
+          </button>
+          <button class="aos-btn aos-btn-secondary" type="button">
+            <svg class="aos-ic aos-ic-16" aria-hidden="true"><use href="#i-download"></use></svg>Export
+          </button>
+          <button class="aos-btn aos-btn-secondary" type="button">
+            <svg class="aos-ic aos-ic-16" aria-hidden="true"><use href="#i-file-diff"></use></svg>Diff
+          </button>
+        </div>
+      </div>
+
+      <div class="wf-head">
+        <span class="aos-label-caps">Span</span>
+        <span class="aos-label-caps aos-duration">Offset</span>
+        <span class="aos-label-caps aos-duration">Duration</span>
+      </div>
+      <ul class="waterfall" id="waterfall" role="tree" aria-label="Trace waterfall" aria-live="polite">
+        <li class="wf-empty" id="wf-empty">
+          <div>No runs yet</div>
+          <div>Start a run and every span will stream here.</div>
+          <div class="cmd">agentos run "your task"</div>
+          <div><button class="aos-btn aos-btn-secondary" type="button"><svg class="aos-ic aos-ic-16" aria-hidden="true"><use href="#i-copy"></use></svg>Copy command</button></div>
+        </li>
+      </ul>
+
+      <section class="dock" aria-label="Span detail">
+        <div class="tabs" role="tablist" aria-label="Span detail tabs">
+          <button role="tab" type="button" data-tab="io" aria-selected="true">I/O</button>
+          <button role="tab" type="button" data-tab="prompt" aria-selected="false">Prompt</button>
+          <button role="tab" type="button" data-tab="retrieved" aria-selected="false">Retrieved</button>
+          <button role="tab" type="button" data-tab="raw" aria-selected="false">Raw JSON</button>
+        </div>
+        <div class="dock-body">
+          <pre class="pre" id="dock-content">Select a span to inspect its input and output.</pre>
+        </div>
+      </section>
+    </section>
+
+    <section id="view-skills" data-view-panel="skills" hidden>
+      <div class="section-head"><span class="aos-label-caps">Skills · 4</span></div>
+      <table class="data-table">
+        <thead>
+          <tr><th scope="col">Skill</th><th scope="col">Version</th><th scope="col">Success trend</th><th scope="col">Calls</th><th scope="col">State</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>rag.hybrid_search</td><td class="aos-mono">v0.3.2</td><td><span class="spark" aria-hidden="true"></span></td><td class="aos-metric">412</td><td><span class="aos-status" data-state="verified"><span class="aos-dot"></span>stable</span></td></tr>
+          <tr><td>shell.safe_exec</td><td class="aos-mono">v1.0.1</td><td><span class="spark" aria-hidden="true"></span></td><td class="aos-metric">733</td><td><span class="aos-status" data-state="verified"><span class="aos-dot"></span>stable</span></td></tr>
+          <tr><td>code.diff_apply</td><td class="aos-mono">v0.2.7</td><td><span class="spark" aria-hidden="true"></span></td><td class="aos-metric">189</td><td><span class="aos-status" data-state="running"><span class="aos-dot" data-state="running"></span>experimental</span></td></tr>
+          <tr><td>doc.summarize</td><td class="aos-mono">v0.1.4</td><td><span class="spark" aria-hidden="true"></span></td><td class="aos-metric">41</td><td><span class="aos-status" data-state="idle"><span class="aos-dot"></span>deprecated</span></td></tr>
+        </tbody>
+      </table>
+      <div class="section-head"><span class="aos-label-caps">Lineage · rag.hybrid_search</span></div>
+      <div class="lineage">
+        <div class="lineage-node">
+          <span class="ln-dot"></span>
+          <div>
+            <div style="display:flex;gap:var(--aos-space-3);align-items:baseline">
+              <strong class="aos-mono">v0.3.0</strong><span class="aos-id">gen 6</span>
+              <span class="aos-delta" data-sign="up">Δ success +1.8pt</span>
+            </div>
+            <div class="note">Mutation: RRF fusion of BM25 and vector recall, top_k 8 → 12.</div>
+          </div>
+        </div>
+        <div class="lineage-node">
+          <span class="ln-dot"></span>
+          <div>
+            <div style="display:flex;gap:var(--aos-space-3);align-items:baseline">
+              <strong class="aos-mono">v0.3.1</strong><span class="aos-id">gen 7</span>
+              <span class="aos-delta" data-sign="up">Δ success +0.9pt</span>
+              <span class="aos-delta" data-sign="down">Δ latency −180ms</span>
+            </div>
+            <div class="note">Mutation: rerank switched to batched inference; removed per-row round trips.</div>
+          </div>
+        </div>
+        <div class="lineage-node" data-current="true">
+          <span class="ln-dot"></span>
+          <div>
+            <div style="display:flex;gap:var(--aos-space-3);align-items:baseline">
+              <strong class="aos-mono">v0.3.2</strong><span class="aos-id">gen 8</span>
+              <span class="aos-delta" data-sign="up">Δ success +4.2pt</span>
+              <span class="aos-status" data-state="verified"><span class="aos-dot"></span>promoted</span>
+            </div>
+            <div class="note">Mutation: recalled chunks now carry char offsets, so evidence traces back to the exact character range.</div>
+            <div style="display:flex;gap:var(--aos-space-1);margin-top:var(--aos-space-2)">
+              <button class="aos-btn aos-btn-secondary" type="button"><svg class="aos-ic aos-ic-16" aria-hidden="true"><use href="#i-file-diff"></use></svg>View diff</button>
+              <button class="aos-btn aos-btn-danger" type="button"><svg class="aos-ic aos-ic-16" aria-hidden="true"><use href="#i-restore"></use></svg>Rollback to v0.3.1</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="view-models" data-view-panel="models" hidden>
+      <div class="stat-strip">
+        <span class="aos-metric">CPU 62%</span><span class="sep">·</span>
+        <span class="aos-metric">RAM 4.1 / 16 GB</span><span class="sep">·</span>
+        <span>qwen2.5-7b-q4_K_M <span class="aos-metric">(3.2 GB resident)</span></span><span class="sep">·</span>
+        <span class="aos-metric">18.4 tok/s</span><span class="sep">·</span>
+        <span>Threads: <span class="aos-metric">4</span></span>
+      </div>
+      <div class="section-head"><span class="aos-label-caps">Local models</span></div>
+      <table class="data-table">
+        <thead>
+          <tr><th scope="col">Model</th><th scope="col">Quant</th><th scope="col">Size</th><th scope="col">State</th><th scope="col">Context</th><th scope="col">tok/s</th><th scope="col">Action</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>qwen2.5-7b-q4_K_M</td><td class="aos-mono">q4_K_M</td><td class="aos-metric">3.20 GB</td><td><span class="aos-status" data-state="running"><span class="aos-dot" data-state="running"></span>loaded</span></td><td class="aos-metric">32768</td><td class="aos-metric">18.4</td><td><button class="aos-btn aos-btn-secondary" type="button">Unload</button></td></tr>
+          <tr><td>all-MiniLM-L6-v2</td><td class="aos-mono">f16</td><td class="aos-metric">90 MB</td><td><span class="aos-status" data-state="verified"><span class="aos-dot"></span>resident</span></td><td class="aos-metric">512</td><td class="aos-metric">412.0</td><td><button class="aos-btn aos-btn-secondary" type="button">Unload</button></td></tr>
+          <tr><td>phi-3-mini-4k</td><td class="aos-mono">q4_K_M</td><td class="aos-metric">2.20 GB</td><td><span class="aos-status" data-state="idle"><span class="aos-dot"></span>not loaded</span></td><td class="aos-metric">4096</td><td class="aos-metric">—</td><td><button class="aos-btn aos-btn-trace" type="button">Load</button></td></tr>
+        </tbody>
+      </table>
+      <div class="section-head"><span class="aos-label-caps">Resources</span></div>
+      <div style="padding:var(--aos-space-3);display:grid;gap:var(--aos-space-3);max-width:32rem">
+        <div>
+          <div style="display:flex;justify-content:space-between;font-size:var(--aos-text-xs);color:var(--aos-fg-secondary)"><span>CPU</span><span class="aos-metric">62%</span></div>
+          <div class="aos-meter" style="margin-top:var(--aos-space-1)"><span style="width:62%"></span></div>
+        </div>
+        <div>
+          <div style="display:flex;justify-content:space-between;font-size:var(--aos-text-xs);color:var(--aos-fg-secondary)"><span>RAM</span><span class="aos-metric">4.1 / 16 GB</span></div>
+          <div class="aos-meter" style="margin-top:var(--aos-space-1)"><span style="width:26%"></span></div>
+        </div>
+        <div>
+          <div style="display:flex;justify-content:space-between;font-size:var(--aos-text-xs);color:var(--aos-fg-secondary)"><span>Context usage</span><span class="aos-metric">84%</span></div>
+          <div class="aos-meter" data-critical="true" style="margin-top:var(--aos-space-1)"><span style="width:84%"></span></div>
+          <div style="font-size:var(--aos-text-xs);color:var(--aos-failed);margin-top:var(--aos-space-1)">RAM at 91% — unload idle models? Next turn triggers context compaction.</div>
+        </div>
+        <div class="note">Small models are memory-bandwidth bound. More than 4 threads usually makes them slower.</div>
+      </div>
+    </section>
+  </main>
+
+  <aside class="evidence" id="evidence-pane" aria-label="Evidence chain">
+    <div class="section-head">
+      <svg class="aos-ic aos-ic-16" aria-hidden="true"><use href="#i-quote"></use></svg>
+      <span class="aos-label-caps">Evidence</span>
+    </div>
+    <div class="evidence-summary">
+      <span>Evidence <span class="aos-metric" id="ev-total">0</span></span>
+      <span>Grounded <span class="aos-metric" id="ev-verified">0</span></span>
+      <span>Unverified <span class="aos-metric" id="ev-unverified">0</span></span>
+      <span>12 chunks · mean relevance <span class="aos-metric">0.62</span></span>
+    </div>
+    <div class="answer" id="answer">
+      Run once and the answer shows up here with citations. Hover a citation number to see which passage in the source it points to.
+    </div>
+    <ul class="ev-list" id="ev-list"></ul>
+  </aside>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ---------------------------------------------------------------------------
+     Demo data. Times in ms; offsets and widths normalised against total.
+     Numbers are organic by design: 12.42s, 3,412 tok, 0.81, sha256:9f3c1a…
+     ------------------------------------------------------------------------ */
+  var RUN = {
+    id: "run-8f3c1a",
+    total: 12420,
+    tokens: 3412,
+    spans: [
+      { id: "s0", depth: 0, kind: "agent",     name: "agent.run",               icon: "i-activity",     start: 0,     dur: 12420, tokens: 3412, status: "ok",
+        io: "task: Add char-offset evidence anchors to glassbox\nstate: done · 9 spans · 12.42s · 3,412 tok" },
+      { id: "s1", depth: 1, kind: "think",     name: "planner.decompose",       icon: "i-binary-tree-2", start: 0,     dur: 180,   tokens: 96,   status: "ok",
+        io: "plan:\n  1. retrieve evidence-anchor implementations\n  2. locate the chunk write path\n  3. add char offset fields\n  4. run a regression pass" },
+      { id: "s2", depth: 1, kind: "retrieval", name: "retrieval.query_rewrite", icon: "i-search",       start: 180,   dur: 430,   tokens: 41,   status: "ok",
+        io: "query: evidence chain char offset anchor\nrewritten: glassbox evidence chunk char_start char_end offset anchor" },
+      { id: "s3", depth: 1, kind: "retrieval", name: "retrieval.hybrid_search", icon: "i-search",       start: 610,   dur: 420,   tokens: 0,    status: "ok",
+        io: "index: docs/ · 1,284 chunks\nrecall: bm25 top 12 ∪ vector top 12 → rrf → 12\nkept: 5" },
+      { id: "s4", depth: 1, kind: "retrieval", name: "retrieval.rerank",        icon: "i-search",       start: 1030,  dur: 410,   tokens: 0,    status: "ok",
+        io: "model: all-MiniLM-L6-v2 (f16)\nbatch: 12 → scores 0.81 / 0.74 / 0.63 / 0.55 / 0.41" },
+      { id: "s5", depth: 1, kind: "llm",       name: "llm.generate",            icon: "i-cpu",          start: 1440,  dur: 8140,  tokens: 3195, status: "ok",
+        io: "prompt tokens: 2,884 · completion tokens: 311\nfinish_reason: stop · 18.4 tok/s" },
+      { id: "s6", depth: 1, kind: "tool",      name: "tool.bash",               icon: "i-tool",         start: 9580,  dur: 2760,  tokens: 0,    status: "ok",
+        io: "$ npx vitest run packages/glassbox --reporter=dot\n ✓ 47 passed (12.1s)" },
+      { id: "s7", depth: 2, kind: "tool",      name: "tool.fs_read",            icon: "i-tool",         start: 9640,  dur: 90,    tokens: 0,    status: "ok",
+        io: "path: packages/glassbox/src/chunk.ts\nbytes: 4,102" },
+      { id: "s8", depth: 1, kind: "llm",       name: "llm.verify_grounding",    icon: "i-shield-check", start: 12340, dur: 80,    tokens: 80,   status: "failed",
+        io: "error: 1 assertion has no supporting chunk\nunsupported_claim: “every retriever returns offsets by default”" }
+    ]
+  };
+
+  var EVIDENCE = [
+    { n: 1, title: "docs/evidence-anchors.md", chunk: "#chunk-3", score: 0.81, state: "verified",
+      quote: "Evidence anchors resolve to the source by character offset, so any assertion traces back to an exact character range.",
+      highlight: "any assertion traces back to an exact character range",
+      path: "~/repo/docs/evidence-anchors.md", mtime: "2026-09-18", hash: "sha256:9f3c1a…", range: "1284–1402" },
+    { n: 2, title: "packages/glassbox/src/chunk.ts", chunk: "#chunk-7", score: 0.74, state: "verified",
+      quote: "char_start and char_end are written at index time; rerank only reorders chunks, it never rewrites their offsets.",
+      highlight: "rerank only reorders chunks, it never rewrites their offsets",
+      path: "~/repo/packages/glassbox/src/chunk.ts", mtime: "2026-09-18", hash: "sha256:2b7e90…", range: "640–733" },
+    { n: 3, title: "docs/retrievers.md", chunk: "#chunk-11", score: 0.63, state: "unverified",
+      quote: "Some retrievers return chunks without offsets; the adapter layer has to fill them in before the chain sees them.",
+      highlight: "the adapter layer has to fill them in",
+      path: "~/repo/docs/retrievers.md", mtime: "2026-09-09", hash: "sha256:c40d1e…", range: "211–288" },
+    { n: 4, title: "docs/roadmap.md", chunk: "#chunk-2", score: 0.41, state: "failed",
+      quote: "Plan: make every retriever return offsets by default in the next release.",
+      highlight: "every retriever return offsets by default",
+      path: "~/repo/docs/roadmap.md", mtime: "2026-07-30", hash: "sha256:aa10f3…", range: "88–152" }
+  ];
+
+  var ANSWER_HTML =
+    'Evidence anchors come from the char_start / char_end written at index time ' +
+    '<button class="cite" type="button" data-ev="1" aria-label="Citation 1: docs/evidence-anchors.md">1</button>; ' +
+    'rerank only reorders chunks, it never rewrites their offsets ' +
+    '<button class="cite" type="button" data-ev="2" aria-label="Citation 2: packages/glassbox/src/chunk.ts">2</button>. ' +
+    'A few retrievers return no offsets, so the adapter has to fill them in ' +
+    '<button class="cite" type="button" data-ev="3" aria-label="Citation 3: docs/retrievers.md">3</button> — ' +
+    'which is why “every retriever returns offsets by default” has no source ' +
+    '<button class="cite" type="button" data-ev="4" aria-label="Citation 4: docs/roadmap.md">4</button>.';
+
+  var STATE_TEXT = { verified: "Grounded", unverified: "Unverified", failed: "No source" };
+  var STATE_ICON = { verified: "i-circle-check-filled", unverified: "i-circle-dashed", failed: "i-alert-triangle-filled" };
+
+  function $(sel) { return document.querySelector(sel); }
+  var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  function icon(id, cls) {
+    return '<svg class="aos-ic ' + (cls || "aos-ic-16") + '" aria-hidden="true"><use href="#' + id + '"></use></svg>';
+  }
+  function fmtSec(ms) { return (ms / 1000).toFixed(2) + "s"; }
+
+  /* ---------------- rail ---------------- */
+  var RAIL = {
+    trace: [
+      { title: "Add char-offset evidence anchors to glassbox", sub: "12.42s · 3,412 tok · 9 spans", state: "running", current: true },
+      { title: "Fix padding waste in batched rerank", sub: "8.10s · 2,204 tok · 6 spans", state: "verified", current: false },
+      { title: "Add A/B comparison panel to evolver", sub: "31.70s · 9,880 tok · 14 spans", state: "failed", current: false }
+    ],
+    skills: [
+      { title: "rag.hybrid_search", sub: "v0.3.2 · 412 calls", state: "verified", current: true },
+      { title: "shell.safe_exec", sub: "v1.0.1 · 733 calls", state: "verified", current: false },
+      { title: "code.diff_apply", sub: "v0.2.7 · 189 calls", state: "running", current: false },
+      { title: "doc.summarize", sub: "v0.1.4 · 41 calls", state: "idle", current: false }
+    ],
+    models: [
+      { title: "qwen2.5-7b-q4_K_M", sub: "3.20 GB · loaded · 18.4 tok/s", state: "running", current: true },
+      { title: "all-MiniLM-L6-v2", sub: "90 MB · resident", state: "verified", current: false },
+      { title: "phi-3-mini-4k", sub: "2.20 GB · not loaded", state: "idle", current: false }
+    ]
+  };
+  var RAIL_CAPTION = { trace: "Runs", skills: "Skills", models: "Models" };
+  var STATE_TOKEN = { verified: "--aos-verified", failed: "--aos-failed", running: "--aos-running", idle: "--aos-idle" };
+
+  function renderRail(view) {
+    $("#rail-caption").textContent = RAIL_CAPTION[view];
+    $("#rail-list").innerHTML = RAIL[view].map(function (it) {
+      return '<li><button class="rail-item" type="button" aria-current="' + it.current + '">' +
+        '<span class="title">' + it.title + "</span>" +
+        '<span class="sub"><span class="aos-dot" data-state="' + it.state +
+        '" style="color:var(' + STATE_TOKEN[it.state] + ')"></span>' + it.sub + "</span></button></li>";
+    }).join("");
+  }
+
+  /* ---------------- view switching ---------------- */
+  function setView(view) {
+    ["trace", "skills", "models"].forEach(function (v) {
+      var panel = document.querySelector('[data-view-panel="' + v + '"]');
+      if (panel) panel.hidden = v !== view;
+      var tab = document.querySelector('.viewnav [data-view="' + v + '"]');
+      if (tab) tab.setAttribute("aria-selected", String(v === view));
+    });
+    $("#evidence-pane").hidden = view !== "trace";
+    renderRail(view);
+  }
+  Array.prototype.forEach.call(document.querySelectorAll(".viewnav [data-view]"), function (btn) {
+    btn.addEventListener("click", function () { setView(btn.getAttribute("data-view")); });
+  });
+
+  /* ---------------- waterfall ---------------- */
+  var wf = $("#waterfall");
+  var selected = null;
+
+  function renderSpan(sp) {
+    var li = document.createElement("li");
+    li.setAttribute("role", "treeitem");
+    li.innerHTML =
+      '<div class="wf-row" tabindex="0" data-id="' + sp.id + '" data-kind="' + sp.kind +
+      '" data-status="' + sp.status + '" aria-selected="false" style="padding-left:calc(var(--aos-space-3) + ' +
+      sp.depth + ' * var(--aos-trace-indent-step))">' +
+        '<span class="wf-label">' + icon(sp.icon) +
+          '<span class="wf-name" title="' + sp.name + '">' + sp.name + "</span>" +
+          '<span class="wf-kind aos-mono">' + sp.kind + "</span>" +
+        "</span>" +
+        '<span class="wf-track"><span class="wf-bar" style="left:' + (sp.start / RUN.total * 100).toFixed(2) +
+          "%;width:max(2px," + (sp.dur / RUN.total * 100).toFixed(2) + '%);"></span></span>' +
+        '<span class="wf-dur aos-duration">' + fmtSec(sp.dur) + "</span>" +
+      "</div>";
+    return li;
+  }
+
+  function selectSpan(id) {
+    Array.prototype.forEach.call(wf.querySelectorAll(".wf-row"), function (row) {
+      row.setAttribute("aria-selected", String(row.getAttribute("data-id") === id));
+    });
+    selected = RUN.spans.filter(function (s) { return s.id === id; })[0] || null;
+    renderDock();
+  }
+
+  wf.addEventListener("click", function (e) {
+    var row = e.target.closest(".wf-row");
+    if (row) selectSpan(row.getAttribute("data-id"));
+  });
+  wf.addEventListener("keydown", function (e) {
+    var rows = Array.prototype.slice.call(wf.querySelectorAll(".wf-row"));
+    var idx = rows.indexOf(document.activeElement.closest(".wf-row"));
+    if (idx < 0) return;
+    if (e.key === "ArrowDown") { e.preventDefault(); if (rows[idx + 1]) rows[idx + 1].focus(); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); if (rows[idx - 1]) rows[idx - 1].focus(); }
+    else if (e.key === "Enter" || e.key === " ") { e.preventDefault(); selectSpan(rows[idx].getAttribute("data-id")); }
+  });
+
+  /* ---------------- detail dock ---------------- */
+  var dockTab = "io";
+  function renderDock() {
+    var out = $("#dock-content");
+    if (!selected) { out.textContent = "Select a span to inspect its input and output."; return; }
+    if (dockTab === "raw") {
+      out.textContent = JSON.stringify({
+        span_id: selected.id, name: selected.name, kind: selected.kind,
+        start_ms: selected.start, duration_ms: selected.dur,
+        tokens: selected.tokens, status: selected.status,
+        model: selected.kind === "llm" ? "qwen2.5-7b-q4_K_M" : undefined
+      }, null, 2);
+      return;
+    }
+    if (dockTab === "prompt") {
+      out.textContent = selected.kind === "llm"
+        ? "system: Answer only from the supplied evidence. Every assertion must trace to a character range in a chunk.\n\n" + selected.io
+        : "Not an LLM span — no prompt.";
+      return;
+    }
+    if (dockTab === "retrieved") {
+      out.textContent = selected.kind === "retrieval"
+        ? selected.io + "\n\n" + EVIDENCE.map(function (e) {
+            return "[" + e.n + "] " + e.title + " " + e.chunk + " · " + e.range + " · score " + e.score;
+          }).join("\n")
+        : "No retrieval output on this span.";
+      return;
+    }
+    out.textContent = selected.io;
+  }
+  Array.prototype.forEach.call(document.querySelectorAll(".tabs [data-tab]"), function (btn) {
+    btn.addEventListener("click", function () {
+      dockTab = btn.getAttribute("data-tab");
+      Array.prototype.forEach.call(document.querySelectorAll(".tabs [data-tab]"), function (b) {
+        b.setAttribute("aria-selected", String(b === btn));
+      });
+      renderDock();
+    });
+  });
+
+  /* ---------------- run engine ---------------- */
+  var timer = null, cursor = 0, running = false;
+
+  function setState(text, state) {
+    $("#run-state").setAttribute("data-state", state);
+    $("#run-state-text").textContent = text;
+    $("#run-state").querySelector(".aos-dot").setAttribute("data-state", state);
+  }
+
+  function resetRun() {
+    if (timer) { clearTimeout(timer); timer = null; }
+    running = false; cursor = 0; selected = null;
+    wf.innerHTML =
+      '<li class="wf-empty" id="wf-empty"><div>No runs yet</div>' +
+      "<div>Start a run and every span will stream here.</div>" +
+      '<div class="cmd">agentos run "your task"</div>' +
+      "<div><button class=\"aos-btn aos-btn-secondary\" type=\"button\">" + icon("i-copy") + "Copy command</button></div></li>";
+    $("#run-wall").textContent = "0.00s";
+    $("#run-tokens").textContent = "0 tok";
+    $("#run-spans").textContent = "0 spans";
+    $("#ev-list").innerHTML = "";
+    $("#answer").textContent = "Run once and the answer shows up here with citations. Hover a citation number to see which passage in the source it points to.";
+    $("#ev-total").textContent = "0";
+    $("#ev-verified").textContent = "0";
+    $("#ev-unverified").textContent = "0";
+    setState("Idle", "idle");
+    $("#btn-run").disabled = false;
+    renderDock();
+  }
+
+  function tick() {
+    if (cursor >= RUN.spans.length) { finish(); return; }
+    var sp = RUN.spans[cursor];
+    if (cursor === 0) { wf.innerHTML = ""; setState("Waiting for first span…", "running"); }
+    wf.appendChild(renderSpan(sp));
+    $("#run-wall").textContent = fmtSec(Math.min(sp.start + sp.dur, RUN.total));
+    $("#run-spans").textContent = (cursor + 1) + " spans";
+    $("#run-tokens").textContent = RUN.spans.slice(0, cursor + 1)
+      .reduce(function (a, s) { return a + s.tokens; }, 0).toLocaleString("en-US") + " tok";
+    cursor += 1;
+    timer = setTimeout(tick, reduced ? 30 : Math.max(90, Math.min(420, sp.dur / 24)));
+  }
+
+  function finish() {
+    running = false;
+    $("#run-wall").textContent = fmtSec(RUN.total);
+    $("#run-tokens").textContent = RUN.tokens.toLocaleString("en-US") + " tok";
+    $("#run-spans").textContent = RUN.spans.length + " spans";
+    setState("Done · 1 assertion ungrounded", "unverified");
+    $("#btn-run").disabled = false;
+    renderEvidence();
+    selectSpan("s5");
+  }
+
+  $("#btn-run").addEventListener("click", function () {
+    if (running) return;
+    running = true;
+    this.disabled = true;
+    setState("Running", "running");
+    $("#egress-count").textContent = "0";
+    tick();
+  });
+  $("#btn-replay").addEventListener("click", function () { resetRun(); $("#btn-run").click(); });
+
+  /* ---------------- evidence + two-way binding ---------------- */
+  function renderEvidence() {
+    $("#answer").innerHTML = ANSWER_HTML;
+    $("#ev-list").innerHTML = EVIDENCE.map(function (e) {
+      var q = e.quote.replace(e.highlight, "<mark>" + e.highlight + "</mark>");
+      return '<li class="ev-card" data-ev="' + e.n + '" tabindex="0">' +
+        '<div class="ev-top">' + icon("i-quote") +
+          '<span class="ev-title">' + e.title + "</span>" +
+          '<span class="rel-bar" title="relevance ' + e.score + '"><span style="width:' + (e.score * 100) + '%"></span></span>' +
+          '<span class="aos-metric" style="font-size:var(--aos-text-xs)">' + e.score.toFixed(2) + "</span>" +
+          '<span class="aos-status" data-state="' + e.state + '">' + icon(STATE_ICON[e.state]) + STATE_TEXT[e.state] + "</span>" +
+        "</div>" +
+        '<p class="ev-quote">' + q + "</p>" +
+        '<div class="ev-meta"><span class="aos-id">' + e.path + "</span><span>" + e.mtime +
+          '</span><span class="aos-id">' + e.hash + '</span><span class="aos-id">' + e.range + "</span></div>" +
+        '<div class="ev-actions">' +
+          '<button class="aos-btn aos-btn-secondary" type="button">' + icon("i-file-search") + "Open source</button>" +
+          '<button class="aos-btn aos-btn-secondary" type="button">' + icon("i-alert-triangle") + "Flag misleading</button>" +
+          '<button class="aos-btn aos-btn-icon" type="button" aria-label="Copy citation ' + e.n + '" title="Copy citation ' + e.n + '">' + icon("i-copy") + "</button>" +
+        "</div></li>";
+    }).join("");
+    $("#ev-total").textContent = String(EVIDENCE.length);
+    $("#ev-verified").textContent = String(EVIDENCE.filter(function (e) { return e.state === "verified"; }).length);
+    $("#ev-unverified").textContent = String(EVIDENCE.filter(function (e) { return e.state !== "verified"; }).length);
+
+    Array.prototype.forEach.call(document.querySelectorAll(".cite, .ev-card"), function (el) {
+      var n = el.getAttribute("data-ev");
+      el.addEventListener("mouseenter", function () { bindEvidence(n, true); });
+      el.addEventListener("mouseleave", function () { bindEvidence(n, false); });
+      el.addEventListener("focus", function () { bindEvidence(n, true); });
+      el.addEventListener("blur", function () { bindEvidence(n, false); });
+      el.addEventListener("click", function () {
+        var card = document.querySelector('.ev-card[data-ev="' + n + '"]');
+        if (!card) return;
+        if (card.scrollIntoView) card.scrollIntoView({ block: "nearest", behavior: reduced ? "auto" : "smooth" });
+        card.focus();
+      });
+    });
+  }
+
+  function bindEvidence(n, on) {
+    Array.prototype.forEach.call(document.querySelectorAll('.cite[data-ev="' + n + '"]'), function (el) {
+      el.setAttribute("data-active", String(on));
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('.ev-card[data-ev="' + n + '"]'), function (el) {
+      el.setAttribute("data-active", String(on));
+    });
+  }
+
+  /* ---------------- sparklines ---------------- */
+  var SPARKS = [
+    [0.52,0.58,0.61,0.60,0.66,0.71,0.74,0.78,0.81,0.83,0.85,0.86],
+    [0.88,0.89,0.91,0.90,0.92,0.93,0.93,0.94,0.94,0.94,0.94,0.94],
+    [0.44,0.49,0.53,0.58,0.57,0.62,0.66,0.64,0.69,0.70,0.71,0.71],
+    [0.61,0.59,0.56,0.54,0.55,0.52,0.50,0.51,0.53,0.52,0.52,0.52]
+  ];
+  Array.prototype.forEach.call(document.querySelectorAll(".spark"), function (el, i) {
+    el.innerHTML = (SPARKS[i] || SPARKS[0]).map(function (v) {
+      return '<i style="height:' + Math.max(2, Math.round(v * 16)) + 'px"></i>';
+    }).join("");
+  });
+
+  /* ---------------- theme ---------------- */
+  $("#theme-toggle").addEventListener("click", function () {
+    var toLight = document.documentElement.getAttribute("data-theme") !== "light";
+    document.documentElement.setAttribute("data-theme", toLight ? "light" : "dark");
+    this.setAttribute("aria-pressed", String(toLight));
+    this.setAttribute("aria-label", toLight ? "Switch to dark theme" : "Switch to light theme");
+    this.setAttribute("title", toLight ? "Switch to dark theme" : "Switch to light theme");
+  });
+
+  /* ---------------- init ---------------- */
+  setView("trace");
+  renderDock();
+})();
+</script>
+
+<!-- =============================================================================
+     agentos-engine — SINGLE SOURCE OF TRUTH for the demo's algorithms.
+     This exact block is extracted by scripts/verify-demo.mjs and executed in a
+     headless Node vm to prove the shipped page satisfies AC-06/07/08/09/10.
+     No DOM access at top level: all rendering lives in the script above.
+     ============================================================================= -->
+<script id="agentos-engine">
+(function (root) {
+  "use strict";
+
+  // --- constants (locked by SPEC / ADR) -------------------------------------
+  var RRF_K = 60;            // RRF rank constant
+  var RERANK_WEIGHT = 0.5;   // AC-06: reranker fused at w = 0.5, never a takeover
+  var PRIMARY_PRIORITY = 2;  // AC-07: primary-list tie-break margin that keeps the
+                             // first-stage champion ahead of a fully-reversed reranker
+  var hasBuffer = (typeof Buffer !== "undefined");
+
+  function rankMap(list) {
+    var m = Object.create(null);
+    for (var i = 0; i < list.length; i++) m[list[i]] = i; // 0-based position
+    return m;
+  }
+  function rrfAt(rank0) { return 1 / (RRF_K + (rank0 + 1)); }
+
+  // --- AC-06 / AC-07 / AC-08: retrieval fusion ------------------------------
+  // First-stage RRF over lexical + semantic, with a deterministic primary-list
+  // tie-break. The reranker is a THIRD signal blended with weight w (< 1), so it
+  // can refine but never overturn the first-stage champion (AC-07). Missing
+  // rerank coverage -> neutral 0 -> first-stage ordering passes through (AC-08).
+  function fuseRetrieval(opts) {
+    opts = opts || {};
+    var lexical = opts.lexical || [];
+    var semantic = opts.semantic || [];
+    var rerank = opts.rerank || [];
+    var w = (typeof opts.w === "number") ? opts.w : 0;
+
+    var rm = rankMap(lexical);
+    var sm = rankMap(semantic);
+    var ids = Object.create(null);
+    var i, id;
+    for (i = 0; i < lexical.length; i++) ids[lexical[i]] = true;
+    for (i = 0; i < semantic.length; i++) ids[semantic[i]] = true;
+
+    var score1 = Object.create(null);
+    var lexRank = Object.create(null);
+    for (id in ids) {
+      var r1 = (rm[id] === undefined) ? lexical.length : rm[id];
+      var r2 = (sm[id] === undefined) ? semantic.length : sm[id];
+      var rrf = rrfAt(r1) + rrfAt(r2);
+      var primary = rrfAt(r1);
+      score1[id] = rrf + PRIMARY_PRIORITY * primary;
+      lexRank[id] = r1;
+    }
+
+    var sm3 = rankMap(rerank);
+    var s3 = Object.create(null);
+    for (i = 0; i < rerank.length; i++) s3[rerank[i]] = rrfAt(i);
+
+    var out = [];
+    for (id in ids) {
+      var s3v = (sm3[id] === undefined) ? 0 : s3[id];
+      var score = (1 - w) * score1[id] + w * s3v;
+      out.push({ id: id, score: score, _s1: score1[id], _lex: lexRank[id] });
+    }
+    out.sort(function (a, b) {
+      if (b.score !== a.score) return b.score - a.score;
+      if (b._s1 !== a._s1) return b._s1 - a._s1;
+      return a._lex - b._lex;
+    });
+    return out.map(function (r) { return { id: r.id, score: r.score }; });
+  }
+
+  // --- AC-09: dual-offset evidence slice -------------------------------------
+  // utf16 span is authoritative for the rendered string (JS string index ===
+  // UTF-16 code unit); byte span is the canonical on-disk address. We return the
+  // utf16 slice and cross-check it equals the byte slice to catch silent CJK
+  // offset corruption.
+  function sliceEvidence(o) {
+    o = o || {};
+    var chunkText = o.chunkText || "";
+    var a = (typeof o.utf16Start === "number") ? o.utf16Start : 0;
+    var b = (typeof o.utf16End === "number") ? o.utf16End : chunkText.length;
+    var slice = chunkText.slice(a, b);
+    if (hasBuffer && typeof o.byteStart === "number" && typeof o.byteEnd === "number") {
+      var byteSlice = Buffer.from(chunkText, "utf8").slice(o.byteStart, o.byteEnd).toString("utf8");
+      if (byteSlice !== slice) throw new Error("evidence-offset-mismatch: byte span != utf16 span");
+    }
+    return slice;
+  }
+
+  // --- AC-10: append-only tamper-evident hash chain --------------------------
+  var _chainSeq = 0;
+  function sha256Hex(str) {
+    return crypto.subtle.digest("SHA-256", new TextEncoder().encode(str)).then(function (buf) {
+      var bytes = new Uint8Array(buf);
+      var hex = "";
+      for (var i = 0; i < bytes.length; i++) hex += bytes[i].toString(16).padStart(2, "0");
+      return hex;
+    });
+  }
+  function canonical(record) {
+    return JSON.stringify(record, Object.keys(record || {}).sort());
+  }
+  async function hashChainAppend(prevHash, record) {
+    _chainSeq += 1;
+    var hash = await sha256Hex((prevHash || "") + "|" + canonical(record));
+    return { seq: _chainSeq, prevHash: prevHash || null, hash: hash, record: record };
+  }
+  async function hashChainVerify(chain) {
+    if (!Array.isArray(chain)) throw new Error("tamper-detected: chain not an array");
+    var prev = null;
+    for (var i = 0; i < chain.length; i++) {
+      var link = chain[i];
+      if (link.prevHash !== prev) throw new Error("tamper-detected: broken linkage at index " + i);
+      var expect = await sha256Hex((prev || "") + "|" + canonical(link.record));
+      if (expect !== link.hash) throw new Error("tamper-detected: hash mismatch at index " + i);
+      if (link.seq !== i + 1) throw new Error("tamper-detected: seq discontinuity at index " + i);
+      prev = link.hash;
+    }
+    return true;
+  }
+
+  var Engine = {
+    RRF_K: RRF_K,
+    RERANK_WEIGHT: RERANK_WEIGHT,
+    PRIMARY_PRIORITY: PRIMARY_PRIORITY,
+    fuseRetrieval: fuseRetrieval,
+    sliceEvidence: sliceEvidence,
+    hashChainAppend: hashChainAppend,
+    hashChainVerify: hashChainVerify
+  };
+  root.AetherosEngine = Engine;
+  if (typeof module !== "undefined" && module.exports) module.exports = Engine;
+})(typeof globalThis !== "undefined" ? globalThis : this);
+</script>
+</body>
+</html>

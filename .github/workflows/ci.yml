@@ -1,0 +1,32 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile=false
+      # P0 policy gate: no emoji / AI-template icons / purple-pink gradient /
+      # hardcoded colors / bounce easing / oversized files.
+      - run: pnpm lint:policy
+      - run: pnpm check:icons
+      - run: pnpm check:fonts
+      - run: pnpm typecheck
+      - run: pnpm build
+      # AC-01 offline baseline: tests run under the offline guard. Outbound must be 0.
+      - run: pnpm test:offline
+      # Single-file demo headless self-check (AC-06/07/08/09/10 + zero external links).
+      - run: pnpm verify:demo

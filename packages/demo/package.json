@@ -1,0 +1,11 @@
+{
+  "name": "@aetheros/demo",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Zero-dependency single-file HTML demo engine (ship alongside v1.0, outside the MVP gate).",
+  "license": "MIT",
+  "scripts": {
+    "verify": "node ../../scripts/verify-demo.mjs"
+  }
+}
