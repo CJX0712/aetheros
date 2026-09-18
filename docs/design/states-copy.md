@@ -32,15 +32,21 @@
 
 **状态词三语对照**（UI 默认英文，zh-CN 语言包按下表替换；**三语都必须带文字，颜色永不单独承载状态**）
 
-| EN（UI 默认） | zh-CN | Token | 图标 | 含义 |
+| EN（UI 默认） | zh-CN | Token | 语义槽 | 含义 |
 |---|---|---|---|---|
-| `Grounded` | 已落地 | `--aos-verified` | check | 断言有检索证据支撑 |
-| `Unverified` | 待核验 | `--aos-unverified` | circle-dashed | 证据链不完整，尚未核验 |
-| `No source` | 未落地 / 无据 | `--aos-failed` | alert-triangle | 无证据支撑，strict 模式下已被拦截 |
-| `Running` | 运行中 | `--aos-running` | loader | span 正在执行 |
-| `Idle` | 空闲 | `--aos-idle` | circle-dashed | 排队 / 未启动 |
+| `Grounded` | 已落地 | `--aos-verified` | `evidence.verified` | 断言有检索证据支撑 |
+| `Unverified` | 待核验 | `--aos-unverified` | `evidence.unverified` | 证据链不完整，尚未核验 |
+| `Refused — no evidence` | 已拒答（无证据） | `--aos-muted` | `evidence.refused` | strict 闸门**主动拦截**该断言，未输出 |
+| `No source` | 无据 | `--aos-failed` | `evidence.failed` | 断言无任何来源支撑 |
+| `Running` | 运行中 | `--aos-running` | `state.running` | span 正在执行 |
+| `Idle` | 空闲 | `--aos-idle` | `state.idle` | 排队 / 未启动 |
 
-> 依据 PRD R-2：Evidence Gate 默认 **strict**，未落地断言一律拦截。UI 与 trace 中**永久标记当前模式**（`strict` / `lenient`），切换宽容模式的命令为 `agentos config set evidence.mode lenient`。该模式标记必须在证据面板与 trace 头同时可见，不能只写在设置页。
+**四种断言态不得合并。** `Refused`（闸门拦截，未输出）、`Unverified`（输出了但证据不完整）、`No source`（输出了但无来源）是**三种不同风险**，各自需要不同的用户动作。合并会让用户无法判断该「补检索」还是该「信这句话」。
+
+图标一律通过**语义槽**引用（见 `icon-semantics.md`），**组件里不得出现图标名**。
+
+> 依据 PRD R-2：Evidence Gate 默认 **strict**，未落地断言一律拦截。切换宽容模式的命令为 `agentos config set evidence.mode lenient`。
+> **模式标记必须常驻三处**：trace 头 / 证据面板 / 每条 span；**不依赖 hover / 点击 / 展开**；lenient 下视觉必须明显区别于 strict（见 `design-system/MASTER.md` §10）。不能只写在设置页。
 **虚构指标禁令**：任何数字必须来自真实计数器。没有数据就写 "No runs yet"，不写 "0 runs" 之外的任何推断。
 
 ---
@@ -51,9 +57,9 @@
 |---|---|---|
 | **Loading** | `Waiting for first span…` + 静默光标（无逐字动画） | 骨架 6 行，`--aos-surface-raised` 条，行高 28px |
 | **Loading（>3s）** | `Model is loading into memory · qwen2.5-7b-q4_K_M (3.2 GB)` | 细条 meter，无 spinner 遮罩 |
-| **Empty** | 标题 `No runs yet` / 正文 `Start a run and every span will stream here.` / 按钮 `Copy command` → `agentos run "your task"` | `activity` 图标 24px `--aos-muted`，文案左对齐，按钮 primary |
+| **Empty** | 标题 `No runs yet` / 正文 `Start a run and every span will stream here.` / 按钮 `Copy command` → `agentos run "your task"` | 语义槽 `nav.runs` 24px `--aos-muted`，文案左对齐，按钮 `.aos-btn-trace` |
 | **Empty（有过滤器）** | `No runs match this filter` / `Clear filter` 次级按钮 | 同上，无图标插画 |
-| **Error · 模型** | `Model failed to load` / `qwen2.5-7b-q4_K_M not found in ~/.aetheros/models` / 按钮 `Open models` + `Retry` | `alert-triangle` + `--aos-failed`，就近显示在 run 头 |
+| **Error · 模型** | `Model failed to load` / `qwen2.5-7b-q4_K_M not found in ~/.aetheros/models` / 按钮 `Open models` + `Retry` | 槽 `evidence.failed` + `--aos-failed`，就近显示在 run 头 |
 | **Error · 工具** | `Tool exited with code 1` / `bash: npm: command not found` / 按钮 `Show full output` | 原始 stderr 用 `--aos-surface-inset` + mono |
 | **Error · 权限** | `Permission denied` / `agentos needs read access to ~/repo/docs` / 按钮 `Grant access` | — |
 | **Error · 超时** | `Run exceeded 120s limit` / 按钮 `Raise limit` + `Retry` | — |
@@ -69,22 +75,25 @@
 | 态 | 文案 | 视觉 |
 |---|---|---|
 | **Loading** | `Searching 4 shards…`（分片数真实计数，不写死） | 骨架 3 行 |
-| **Empty · 索引未建** | 标题 `No index yet` / 正文 `Index a directory and evidence will be traceable to the character.` / 按钮 `Copy command` → `agentos index ./docs` | `file-search` 24px |
+| **Empty · 索引未建** | 标题 `No index yet` / 正文 `Index a directory and evidence will be traceable to the character.` / 按钮 `Copy command` → `agentos index ./docs` | 槽 `nav.evidence` 24px |
 | **Empty · 检索无果** | `No chunks scored above 0.20` / `Lower the threshold` 或 `Reindex` | 阈值数字来自真实配置 |
-| **Error · 索引损坏** | `Index is unreadable` / `vector.idx failed checksum at block 1,204` / 按钮 `Rebuild index` | `alert-triangle` |
+| **Error · 索引损坏** | `Index is unreadable` / `vector.idx failed checksum at block 1,204` / 按钮 `Rebuild index` | 槽 `state.warning` + `--aos-failed` |
 | **Error · 嵌入模型缺失** | `Embedding model not loaded` / `all-MiniLM-L6-v2 (90 MB) is not in ~/.aetheros/models` / 按钮 `Download` + `Cancel` | 下载按钮明示例外（唯一允许的出站动作，须显式告知） |
 | **Error · 哈希不匹配** | `Source changed since indexing` / `docs/architecture.md differs from sha256:9f3c…` / 按钮 `Show diff` + `Reindex` | `shield-x` + `--aos-failed` |
 | **Populated** | 计数行：`Evidence 7 · Grounded 5 · Unverified 2 · 12 chunks · mean relevance 0.62` | 计数行常驻，是可审计性第一入口 |
 | **Populated · 单条** | `docs/architecture.md #chunk-3` / 摘要句 / `~/repo/docs/architecture.md · 2026-09-18 · sha256:9f3c… · 1284–1402` / `Open source` `Flag misleading` `Copy citation` | 溯源四件套 |
-| **Edge · 低置信** | `Low confidence — all chunks scored below 0.20. Treat this answer as ungrounded.` | `--aos-unverified` + `alert-triangle` + 文字 |
+| **Edge · 低置信** | `Low confidence — all chunks scored below 0.20. Treat this answer as ungrounded.` | `--aos-unverified` + 槽 `evidence.unverified` + 文字 `Unverified` |
 | **Edge · 超长摘要** | 3 行截断 + `Expand` | `-webkit-line-clamp: 3` |
 
 **状态语义（三通道，颜色永不是唯一信号）**
 > 图标名必须以 `packages/ui/src/icons.manifest.ts`（P0 唯一图标源，ADR-006 / ADR-014）为准。本表文案与语义先行，图标名如有出入以 manifest 为锁定值。
 
-- Grounded → `check-check` 语义位 → manifest 锁定 `shield-check` + `--aos-verified` + 文字 `Grounded`
-- Unverified → `circle-dashed` 语义位 → manifest 锁定 `shield-question` + `--aos-unverified` + 文字 `Unverified`
-- Ungrounded → `alert-triangle` 语义位 → manifest 锁定 `info-circle` + `--aos-failed` + 文字 `No source`
+- Grounded → 槽 `evidence.verified` + `--aos-verified` + 文字 `Grounded`
+- Unverified → 槽 `evidence.unverified` + `--aos-unverified` + 文字 `Unverified`
+- Refused → 槽 `evidence.refused` + `--aos-muted` + 文字 `Refused — no evidence`
+- No source → 槽 `evidence.failed` + `--aos-failed` + 文字 `No source`
+
+（图标名由构建脚本解析，组件只写语义槽；绑定表见 `icon-semantics.md` §4。）
 
 ---
 
@@ -94,8 +103,8 @@
 |---|---|---|
 | **Loading · 候选生成** | `Generating candidate 3 of 8…` + `Abort` 按钮 | 进度条 meter 6px |
 | **Loading · 评估中** | `Running eval set · 42 cases · 17 done` | 计数器 mono |
-| **Empty** | 标题 `No evolution yet` / 正文 `A skill needs 20 recorded runs before candidates are generated.` / 按钮 `Run evaluation` | `git-branch` 24px |
-| **Empty · 技能库** | `No skills recorded` / `Skills appear here after their first successful run.` | `blocks` 24px |
+| **Empty** | 标题 `No evolution yet` / 正文 `A skill needs 20 recorded runs before candidates are generated.` / 按钮 `Run evaluation` | 槽 `skill.lineage` 24px |
+| **Empty · 技能库** | `No skills recorded` / `Skills appear here after their first successful run.` | 槽 `skill.library` 24px |
 | **Error · 评估失败** | `Evaluation failed` / `3 of 42 cases errored: tool timeout (2), OOM (1)` / 按钮 `View cases` + `Retry` | 分类+计数，不笼统 |
 | **Error · 晋升被拒** | `Candidate did not clear the bar` / `Success rate 61% vs current 68% (−7.0pt)` / 按钮 `Keep as candidate` + `Discard` | 数字来自真实对比 |
 | **Populated** | 行：`refactor-imports · v0.3.2 · 68% · 142 calls · stable` | sparkline 12 根 2px 条 |
@@ -113,7 +122,7 @@
 | 态 | 文案 | 视觉 |
 |---|---|---|
 | **Loading · 加载模型** | `Loading qwen2.5-7b-q4_K_M · 2.1 / 3.2 GB` | meter 6px，`--aos-surface-inset` 轨道 |
-| **Empty** | 标题 `No models installed` / 正文 `aetheros runs locally. Pull a model to make your first run.` / 按钮 `Copy command` → `agentos pull qwen2.5-7b-q4_K_M` | `cpu` 24px |
+| **Empty** | 标题 `No models installed` / 正文 `aetheros runs locally. Pull a model to make your first run.` / 按钮 `Copy command` → `agentos pull qwen2.5-7b-q4_K_M` | 槽 `model.local` 24px |
 | **Error · 磁盘不足** | `Not enough disk` / `qwen2.5-7b-q4_K_M needs 3.2 GB, 0.9 GB free` / 按钮 `Choose smaller quant` | 数字真实 |
 | **Error · 推理崩溃** | `Inference stopped` / `llama.cpp exited 2: tensor mismatch for blk.0.attn_norm` / 按钮 `Show log` + `Reload` | mono 原始错误 |
 | **Populated · metric strip** | `CPU 62% · RAM 4.1 / 16 GB · qwen2.5-7b-q4_K_M (3.2 GB resident) · 18.4 tok/s` | **单行内联**，全部 mono + tabular-nums。拒绝「大数字+小标签」指标卡 |

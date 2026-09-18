@@ -25,9 +25,11 @@
   --aos-neutral-800: #181c1e;
   --aos-neutral-700: #20262a;
   --aos-neutral-600: #2a3134;
+  --aos-neutral-500: #3a4347;
   --aos-neutral-400: #7a8488;
   --aos-neutral-300: #8a9498;
   --aos-neutral-200: #b4bdc0;
+  --aos-neutral-100: #d3dadc;
   --aos-neutral-50: #e6ebec;
 
   /* ---- primitive: cool light neutral ---- */
@@ -45,10 +47,14 @@
   --aos-cyan-900: #04201d;
   --aos-cyan-800: #0e7f75;
   --aos-cyan-700: #12a79a;
+  --aos-cyan-600: #1fbdb0;
   --aos-cyan-500: #3ccfc1;
   --aos-cyan-400: #4fdcd0;
+  --aos-cyan-300: #7fe7de;
+  --aos-cyan-200: #b2f1eb;
 
   /* ---- primitive: evidence amber / grounded / failed ---- */
+  --aos-amber-700: #9a6620;
   --aos-amber-600: #c4842a;
   --aos-amber-500: #e8a33d;
   --aos-green-700: #2f7a4a;
@@ -64,12 +70,12 @@
   --aos-hairline-strong-light: rgba(255, 255, 255, 0.16);
   --aos-hairline-dark: rgba(0, 0, 0, 0.16);
   --aos-hairline-soft-dark: rgba(0, 0, 0, 0.06);
-  --aos-span-agent: rgba(60, 207, 193, 0.46);
-  --aos-span-llm: rgba(60, 207, 193, 0.38);
-  --aos-span-retrieval: rgba(60, 207, 193, 0.3);
-  --aos-span-tool: rgba(60, 207, 193, 0.22);
-  --aos-span-think: rgba(60, 207, 193, 0.14);
-  --aos-span-failed: rgba(229, 84, 75, 0.26);
+  --aos-span-fill-agent: rgba(60, 207, 193, 0.46);
+  --aos-span-fill-llm: rgba(60, 207, 193, 0.38);
+  --aos-span-fill-retrieval: rgba(60, 207, 193, 0.3);
+  --aos-span-fill-tool: rgba(60, 207, 193, 0.22);
+  --aos-span-fill-think: rgba(60, 207, 193, 0.14);
+  --aos-span-fill-failed: rgba(229, 84, 75, 0.26);
   --aos-tint-accent: rgba(60, 207, 193, 0.12);
   --aos-tint-accent-light: rgba(14, 127, 117, 0.1);
   --aos-focus-dark: rgba(60, 207, 193, 0.45);
@@ -113,15 +119,24 @@
   --aos-meter-fill-critical: var(--aos-red-500);
   --aos-meter-track: var(--aos-neutral-1000);
 
-  /* ---- semantic: span fills (one hue, density graded) ---- */
+  /* ---- semantic: span fills (one hue, density graded, plus icon + label) ---- */
   --aos-span-stroke: var(--aos-cyan-400);
+  --aos-span-agent: var(--aos-span-fill-agent);
+  --aos-span-llm: var(--aos-span-fill-llm);
+  --aos-span-retrieval: var(--aos-span-fill-retrieval);
+  --aos-span-tool: var(--aos-span-fill-tool);
+  --aos-span-think: var(--aos-span-fill-think);
+  --aos-span-failed: var(--aos-span-fill-failed);
   --aos-span-stroke-failed: var(--aos-red-500);
 
   /* ---- semantic: typography ---- */
   --aos-font-sans: "Geist", system-ui, -apple-system, "PingFang SC",
     "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
   --aos-font-mono: "Commit Mono", "Sarasa Mono SC", "Cascadia Mono", Consolas,
-    "PingFang SC", monospace;
+    monospace;
+  --aos-font-cjk-optional: "Sarasa Gothic SC", "Sarasa Mono SC", "PingFang SC",
+    "Microsoft YaHei", "Noto Sans CJK SC";
+  --aos-font-display: var(--aos-font-sans);
 
   --aos-text-2xs: 0.6875rem;
   --aos-text-xs: 0.75rem;
@@ -129,6 +144,10 @@
   --aos-text-base: 0.875rem;
   --aos-text-md: 1rem;
   --aos-text-lg: 1.125rem;
+  --aos-text-xl: 1.25rem;
+  --aos-text-2xl: 1.5rem;
+  --aos-text-3xl: 1.875rem;
+  --aos-text-4xl: 2.375rem;
 
   --aos-weight-read: 400;
   --aos-weight-emphasize: 510;
@@ -136,7 +155,11 @@
 
   --aos-leading-body: 1.55;
   --aos-leading-heading: 1.25;
+  --aos-leading-dense: 1.45;
+  --aos-leading-tight: 1.15;
 
+  --aos-tracking-body: 0;
+  --aos-tracking-small: 0.02em;
   --aos-tracking-caps: 0.08em;
   --aos-tracking-display: -0.018em;
 
@@ -148,7 +171,9 @@
   --aos-space-5: 1.25rem;
   --aos-space-6: 1.5rem;
   --aos-space-8: 2rem;
+  --aos-space-10: 2.5rem;
   --aos-space-12: 3rem;
+  --aos-space-16: 4rem;
 
   /* ---- semantic: radius (hard ceiling 8px) ---- */
   --aos-radius-sm: 0.25rem;
@@ -171,20 +196,58 @@
   --aos-motion-base: 180ms;
   --aos-motion-slow: 260ms;
   --aos-ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --aos-ease-emphasized: cubic-bezier(0.4, 0, 0.2, 1);
 
   /* ---- semantic: z ---- */
+  --aos-z-base: 0;
   --aos-z-sticky: 10;
+  --aos-z-panel: 20;
+  --aos-z-overlay: 100;
+  --aos-z-modal: 200;
+  --aos-z-toast: 300;
 
   /* ---- component ---- */
-  --aos-layout-rail-width: 15rem;
-  --aos-layout-evidence-width: 22.5rem;
-  --aos-layout-topbar-height: 3rem;
-  --aos-trace-row-height: 1.75rem;
-  --aos-trace-indent-step: 0.75rem;
-  --aos-trace-bar-height: 0.625rem;
-  --aos-trace-dock-height: 15rem;
+  --aos-layout-rail-width: 15rem;              /* 240px */
+  --aos-layout-evidence-width: 22.5rem;        /* 360px */
+  --aos-layout-container-max: 80rem;           /* 1280px */
+  --aos-layout-topbar-height: 3rem;            /* 48px */
+  --aos-layout-statstrip-height: 1.75rem;      /* 28px */
+
+  --aos-trace-row-height: 1.75rem;             /* 28px */
+  --aos-trace-indent-step: 0.75rem;            /* 12px */
+  --aos-trace-guide-width: 1px;
+  --aos-trace-bar-height: 0.625rem;            /* 10px */
+  --aos-trace-bar-radius: 2px;
+  --aos-trace-bar-min-width: 2px;
+  --aos-trace-dock-height: 17.5rem;            /* 280px */
+  --aos-trace-dock-min-height: 12.5rem;        /* 200px */
+
+  --aos-evidence-chip-height: 1rem;            /* 16px */
+  --aos-evidence-chip-padding-x: 0.25rem;      /* 4px */
+  --aos-evidence-chip-radius: var(--aos-radius-sm);
+  --aos-evidence-relevance-height: 4px;
+  --aos-evidence-relevance-width: 3rem;        /* 48px */
+  --aos-evidence-card-padding: var(--aos-space-3);
+
+  --aos-button-height-sm: 1.75rem;             /* 28px */
+  --aos-button-height-md: 2rem;                /* 32px */
+  --aos-button-padding-x: var(--aos-space-3);
+  --aos-button-radius: var(--aos-radius-sm);
+  --aos-button-icon-gap: var(--aos-space-1);
+  --aos-input-height: 2rem;                    /* 32px */
+  --aos-input-padding-x: var(--aos-space-2);
+  --aos-input-radius: var(--aos-radius-md);
+
+  --aos-table-header-height: 2rem;             /* 32px */
+  --aos-table-row-height: 2rem;                /* 32px */
+  --aos-table-divider-width: 1px;
+
   --aos-meter-height: 6px;
   --aos-meter-track-radius: 2px;
+  --aos-meter-critical-threshold: 0.8;
+  --aos-sparkline-bar-width: 2px;
+  --aos-sparkline-bar-gap: 2px;
+  --aos-sparkline-height: 1rem;                /* 16px */
 }
 
 [data-theme="light"] {
@@ -256,7 +319,8 @@ body {
    scaling: 2 user units render as 2px at 24px and 1.33px at 16px, which is the
    optically tuned ratio Tabler ships. Only change this constant if a 1x-screen
    16px screenshot proves the icons are unreadable. */
-.aos-ic * { stroke-width: var(--ic-sw, 2); }
+.aos-ic { --ic-sw: 2; /* ICON_STROKE — constant, never per-size. See demo-engine-spec.md §4 */ }
+.aos-ic * { stroke-width: var(--ic-sw); }
 .aos-ic-16 { width: 16px; height: 16px; }
 .aos-ic-20 { width: 20px; height: 20px; }
 .aos-ic-24 { width: 24px; height: 24px; }
@@ -522,7 +586,8 @@ body {
 <!-- =============================================================================
      Tabler Icons 3.46.0 (MIT) — inlined sprite
      outline: 24x24 / stroke-width 2 / round caps  ·  filled: matching solid variants
-     sizes 16 / 20 / 24px, stroke = size/12 via --ic-sw
+     sizes 16 / 20 / 24px, stroke constant --ic-sw: 2 (24 viewBox user units)
+     Two AI-template icon names are on the lint denylist and are never embedded.
      ============================================================================= -->
 <svg class="aos-sprite" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
   <symbol id="i-player-play" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4v16l13-8z"/></symbol>
@@ -531,7 +596,8 @@ body {
   <symbol id="i-player-stop-filled" viewBox="0 0 24 24"><path fill="currentColor" d="M17 4H7a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3V7a3 3 0 0 0-3-3"/></symbol>
   <symbol id="i-search" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10a7 7 0 1 0 14 0a7 7 0 1 0-14 0m18 11l-6-6"/></symbol>
   <symbol id="i-tool" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 10h3V7L6.5 3.5a6 6 0 0 1 8 8l6 6a2 2 0 0 1-3 3l-6-6a6 6 0 0 1-8-8z"/></symbol>
-  <!-- banned icon removed: that icon is banned (AI-template smell). think -> i-binary-tree-2, llm -> i-cpu. -->
+  <!-- Denylisted icon deliberately not embedded. think -> i-list-tree, llm -> i-cpu. -->
+
   <symbol id="i-quote" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 11H6a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v6q0 4-4 5m13-7h-4a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v6q0 4-4 5"/></symbol>
   <symbol id="i-quote-filled" viewBox="0 0 24 24"><path fill="currentColor" d="M9 5a2 2 0 0 1 2 2v6c0 3.13-1.65 5.193-4.757 5.97a1 1 0 1 1-.486-1.94C7.984 16.473 9 15.203 9 13v-1H6a2 2 0 0 1-1.995-1.85L4 10V7a2 2 0 0 1 2-2zm9 0a2 2 0 0 1 2 2v6c0 3.13-1.65 5.193-4.757 5.97a1 1 0 1 1-.486-1.94C16.984 16.473 18 15.203 18 13v-1h-3a2 2 0 0 1-1.995-1.85L13 10V7a2 2 0 0 1 2-2z"/></symbol>
   <symbol id="i-circle-check" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0-18 0"/><path d="m9 12l2 2l4-4"/></g></symbol>
@@ -590,10 +656,10 @@ body {
   <aside class="rail" aria-label="Views and lists">
     <nav class="viewnav" role="tablist" aria-label="Primary views">
       <button role="tab" type="button" data-view="trace" aria-selected="true">
-        <svg class="aos-ic aos-ic-20" aria-hidden="true"><use href="#i-activity"></use></svg>Runs
+        <svg class="aos-ic aos-ic-20" aria-hidden="true"><use href="#i-timeline"></use></svg>Runs
       </button>
       <button role="tab" type="button" data-view="skills" aria-selected="false">
-        <svg class="aos-ic aos-ic-20" aria-hidden="true"><use href="#i-binary-tree-2"></use></svg>Skills
+        <svg class="aos-ic aos-ic-20" aria-hidden="true"><use href="#i-package"></use></svg>Skills
       </button>
       <button role="tab" type="button" data-view="models" aria-selected="false">
         <svg class="aos-ic aos-ic-20" aria-hidden="true"><use href="#i-cpu"></use></svg>Models
@@ -788,9 +854,9 @@ body {
     total: 12420,
     tokens: 3412,
     spans: [
-      { id: "s0", depth: 0, kind: "agent",     name: "agent.run",               icon: "i-activity",     start: 0,     dur: 12420, tokens: 3412, status: "ok",
+      { id: "s0", depth: 0, kind: "agent",     name: "agent.run",               icon: "i-binary-tree-2", start: 0,    dur: 12420, tokens: 3412, status: "ok",
         io: "task: Add char-offset evidence anchors to glassbox\nstate: done · 9 spans · 12.42s · 3,412 tok" },
-      { id: "s1", depth: 1, kind: "think",     name: "planner.decompose",       icon: "i-binary-tree-2", start: 0,     dur: 180,   tokens: 96,   status: "ok",
+      { id: "s1", depth: 1, kind: "think",     name: "planner.decompose",       icon: "i-list-tree",    start: 0,     dur: 180,   tokens: 96,   status: "ok",
         io: "plan:\n  1. retrieve evidence-anchor implementations\n  2. locate the chunk write path\n  3. add char offset fields\n  4. run a regression pass" },
       { id: "s2", depth: 1, kind: "retrieval", name: "retrieval.query_rewrite", icon: "i-search",       start: 180,   dur: 430,   tokens: 41,   status: "ok",
         io: "query: evidence chain char offset anchor\nrewritten: glassbox evidence chunk char_start char_end offset anchor" },
@@ -839,7 +905,10 @@ body {
     '<button class="cite" type="button" data-ev="4" aria-label="Citation 4: docs/roadmap.md">4</button>.';
 
   var STATE_TEXT = { verified: "Grounded", unverified: "Unverified", failed: "No source" };
-  var STATE_ICON = { verified: "i-circle-check-filled", unverified: "i-circle-dashed", failed: "i-alert-triangle-filled" };
+  /* evidence state icons must form one family: check / dashed / x.
+     `alert-triangle` belongs to the generic-warning slot (gate.lenient), not to
+     a failed assertion — Amber Means Unverified and Rule 3 keep them separate. */
+  var STATE_ICON = { verified: "i-circle-check-filled", unverified: "i-circle-dashed", failed: "i-circle-x" };
 
   function $(sel) { return document.querySelector(sel); }
   var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;

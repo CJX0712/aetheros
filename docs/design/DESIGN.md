@@ -198,15 +198,22 @@ Lucide 是 outline-only，**没有 filled 变体**。本产品有大量 active /
 
 ### 5.2 尺寸与描边规范
 
-| 用途 | 尺寸 | 描边宽度 |
-|---|---|---|
-| 行内 / 表格单元格 | 16px | 1.33 |
-| 按钮内 / 导航 | 20px | 1.67 |
-| 独立 / 空状态 / 面板标题 | 24px | 2 |
+| 用途 | 尺寸 |
+|---|---|
+| 行内 / 表格单元格 | 16px |
+| 按钮内 / 导航 | 20px |
+| 独立 / 空状态 / 面板标题 | 24px |
 
-**描边宽度 = size / 12**，保证三个尺寸光学重量一致。禁止在使用时对默认 `stroke-width="2"` 不加缩放地渲染 16px 图标（会明显偏重）。
+**描边宽度：`ICON_STROKE = 2`（24 网格用户单位）单一常量。禁止按尺寸预计算。**
+
+> 本节曾写作「描边 = size / 12」（16px→1.33）。**该规则已作废**（终裁见 `design-system/MASTER.md` §9）。
+> 原因：SVG 的 `viewBox` 会把用户单位二次缩放。按尺寸预计算出的 1.33 被 viewBox 再乘一次，16px 图标实际会**变粗**，与意图相反。单一常量 2 在 24 网格下，无论渲染成 16/20/24px 都保持正确光学重量。
 
 ### 5.3 语义映射
+
+> **本表仅为人类可读摘录。权威清单是 `icon-semantics.md`（语义槽 → Tabler 绑定）。**
+> **组件禁止引用图标名**，只引用语义槽；`Icon[A-Z]` 出现在组件里 = CI fail。
+> `IconBrain` 已拉黑（AI 模板味），本地推理用 `model.local` 槽，提示响应用 `model.prompt` 槽。
 
 | 概念 | outline | filled（active / selected 态） |
 |---|---|---|
@@ -216,7 +223,7 @@ Lucide 是 outline-only，**没有 filled 变体**。本产品有大量 active /
 | 对比 / diff | `IconFileDiff` | `IconFileDiffFilled` |
 | 检索 | `IconSearch` | — |
 | 工具调用 | `IconTool` | `IconToolFilled` |
-| 推理 | `IconBrain` | `IconBrainFilled` |
+| 推理 / LLM | 语义槽 `model.local` | — |
 | 证据 / 引用 | `IconQuote` | `IconQuoteFilled` |
 | 已核验 | `IconCircleCheck` | `IconCircleCheckFilled` |
 | 待核验 / 证据不完整 | `IconCircleDashed` | 无 filled → 见下方回退规则 |

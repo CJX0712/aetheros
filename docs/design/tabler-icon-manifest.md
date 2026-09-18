@@ -10,11 +10,28 @@
 |---|---|
 | 唯一图标库 | Tabler Icons。**全项目不得出现第二套图标库** |
 | 尺寸 | 仅 16 / 20 / 24px |
-| 描边宽度 | **= size / 12** → 16px 用 `1.33`，20px 用 `1.67`，24px 用 `2` |
+| 描边宽度 | **`ICON_STROKE = 2` 单一常量（24 网格用户单位）。禁止按尺寸预计算** → 见下方「描边宽度（已更正）」 |
 | 颜色 | 一律 `currentColor`，由 `var(--aos-*)` 控制。禁止 inline 色值 |
-| active / selected 态 | 优先用 **filled 变体**；filled 集里没有的，用「outline + `--aos-accent` 描边 + 加粗至 2.5」 |
+| active / selected 态 | 优先用 **filled 变体**；filled 集里没有的，用「outline + `--aos-accent` 描边」。**filled 永不替代文字标签（P4）** |
+| 组件引用方式 | **组件只引用语义槽，禁止引用图标名** → 见 `icon-semantics.md` |
 | 纯图标按钮 | 必须带 `aria-label` + tooltip |
 | emoji | **零容忍**。功能图标、状态图标、空状态图标全部由 Tabler 承担 |
+
+### 描边宽度（已更正）
+
+**本表曾写作「= size / 12」→ 16px 用 1.33、20px 用 1.67。该规则已作废**（终裁见 `design-system/MASTER.md` §9）。
+
+原因：SVG 的 `viewBox` 会把用户单位二次缩放。按尺寸预计算出的 `1.33` 被 viewBox 再乘一次，16px 图标实际**变粗**，与意图相反。
+正确做法：单一常量 `ICON_STROKE = 2`，无论渲染成 16 / 20 / 24px 都保持正确光学重量。
+
+```css
+/* 更正后的实现。注意不要再写 --ic-sw 的尺寸分支 */
+.aos-ic { width: 20px; height: 20px; fill: none; stroke: none; }
+.aos-ic * { stroke-width: 2; }          /* ICON_STROKE，单一常量 */
+.aos-ic-16 { width: 16px; height: 16px; }
+.aos-ic-20 { width: 20px; height: 20px; }
+.aos-ic-24 { width: 24px; height: 24px; }
+```
 
 ### CSS 覆盖描边（关键实现细节）
 
@@ -39,7 +56,8 @@ Tabler 的 path 上带 `stroke-width="2"` 表现属性。CSS **类选择器优�
 | 重放 | `IconRestore` | — | `i-restore` | 无 filled → accent 描边 |
 | 检索 | `IconSearch` | — | `i-search` | |
 | 工具调用 | `IconTool` | **无** | `i-tool` | filled 集中不存在 → 回退规则 |
-| 推理 / LLM | `IconBrain` | **无** | `i-brain` | filled 集中不存在 → 回退规则 |
+| 推理 / LLM | `IconCpu` | **无** | `i-cpu` | **原 `IconBrain` 已拉黑**（AI 模板味）。语义槽 `model.local` |
+| 提示与响应 | `IconMessage` | — | `i-message` | 语义槽 `model.prompt`。**不得用 `IconBrain`** |
 | 证据 / 引用 | `IconQuote` | `IconQuoteFilled` | `i-quote` / `i-quote-filled` | |
 | 已核验 | `IconCircleCheck` | `IconCircleCheckFilled` | `i-circle-check` / `i-circle-check-filled` | |
 | 待核验 / 证据不完整 | `IconCircleDashed` | — | `i-circle-dashed` | 配 `--aos-unverified` |
@@ -77,7 +95,7 @@ Tabler 的 path 上带 `stroke-width="2"` 表现属性。CSS **类选择器优�
 <symbol id="i-player-stop-filled" viewBox="0 0 24 24"><path fill="currentColor" d="M17 4H7a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3V7a3 3 0 0 0-3-3"/></symbol>
 <symbol id="i-search" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10a7 7 0 1 0 14 0a7 7 0 1 0-14 0m18 11l-6-6"/></symbol>
 <symbol id="i-tool" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 10h3V7L6.5 3.5a6 6 0 0 1 8 8l6 6a2 2 0 0 1-3 3l-6-6a6 6 0 0 1-8-8z"/></symbol>
-<symbol id="i-brain" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M15.5 13a3.5 3.5 0 0 0-3.5 3.5v1a3.5 3.5 0 0 0 7 0v-1.8M8.5 13a3.5 3.5 0 0 1 3.5 3.5v1a3.5 3.5 0 0 1-7 0v-1.8"/><path d="M17.5 16a3.5 3.5 0 0 0 0-7H17"/><path d="M19 9.3V6.5a3.5 3.5 0 0 0-7 0M6.5 16a3.5 3.5 0 0 1 0-7H7"/><path d="M5 9.3V6.5a3.5 3.5 0 0 1 7 0v10"/></g></symbol>
+<!-- i-brain 已移除：AI 模板味图标，永不使用。本地推理走 i-cpu，提示响应走 i-message -->
 <symbol id="i-quote" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 11H6a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v6q0 4-4 5m13-7h-4a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v6q0 4-4 5"/></symbol>
 <symbol id="i-quote-filled" viewBox="0 0 24 24"><path fill="currentColor" d="M9 5a2 2 0 0 1 2 2v6c0 3.13-1.65 5.193-4.757 5.97a1 1 0 1 1-.486-1.94C7.984 16.473 9 15.203 9 13v-1H6a2 2 0 0 1-1.995-1.85L4 10V7a2 2 0 0 1 2-2zm9 0a2 2 0 0 1 2 2v6c0 3.13-1.65 5.193-4.757 5.97a1 1 0 1 1-.486-1.94C16.984 16.473 18 15.203 18 13v-1h-3a2 2 0 0 1-1.995-1.85L13 10V7a2 2 0 0 1 2-2z"/></symbol>
 <symbol id="i-circle-check" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0-18 0"/><path d="m9 12l2 2l4-4"/></g></symbol>
@@ -92,6 +110,7 @@ Tabler 的 path 上带 `stroke-width="2"` 表现属性。CSS **类选择器优�
 <symbol id="i-cpu" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M5 6a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1z"/><path d="M9 9h6v6H9zm-6 1h2m-2 4h2m5-11v2m4-2v2m7 5h-2m2 4h-2m-5 7v-2m-4 2v-2"/></g></symbol>
 <symbol id="i-timeline" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="m4 16l6-7l5 5l5-6"/><path d="M14 14a1 1 0 1 0 2 0a1 1 0 1 0-2 0M9 9a1 1 0 1 0 2 0a1 1 0 1 0-2 0m-6 7a1 1 0 1 0 2 0a1 1 0 1 0-2 0m16-8a1 1 0 1 0 2 0a1 1 0 1 0-2 0"/></g></symbol>
 <symbol id="i-clock" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0-18 0"/><path d="M12 7v5l3 3"/></g></symbol>
+<symbol id="i-list-tree" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 6h11m-8 6h8m-5 6h5M5 6v.01M8 12v.01M11 18v.01"/></symbol>
 <symbol id="i-terminal-2" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="m8 9l3 3l-3 3m5 0h3"/><path d="M3 6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></g></symbol>
 <symbol id="i-copy" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M7 9.667A2.667 2.667 0 0 1 9.667 7h8.666A2.667 2.667 0 0 1 21 9.667v8.666A2.667 2.667 0 0 1 18.333 21H9.667A2.667 2.667 0 0 1 7 18.333z"/><path d="M4.012 16.737A2 2 0 0 1 3 15V5c0-1.1.9-2 2-2h10c.75 0 1.158.385 1.5 1"/></g></symbol>
 <symbol id="i-download" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2M7 11l5 5l5-5m-5-7v12"/></symbol>
@@ -122,4 +141,6 @@ https://api.iconify.design/tabler.json?icons=<kebab-name-1>,<kebab-name-2>
 
 ## 5. 已确认不存在的 filled 变体
 
-`tool-filled`、`brain-filled`、`cpu-filled`。这三个在 active / selected 态统一使用回退规则：outline + `--aos-accent` 描边 + 描边加粗至 2.5，**不引入第二套图标库**。
+`tool-filled`、`cpu-filled`、`list-tree-filled`。这三个在 active / selected 态统一使用回退规则：outline + `--aos-accent` 描边，**不引入第二套图标库**。
+
+> 原列出的 `brain-filled` 条目随 `i-brain` 一并作废——`IconBrain` 已拉黑，不再参与任何态。见 `icon-semantics.md` §5。

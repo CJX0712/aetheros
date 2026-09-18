@@ -189,7 +189,7 @@ docs/design/
 
 1. **当前模式标记同时出现在三处**：trace 头、证据面板、**每条 span**。
 2. **不依赖 hover / 点击 / 展开**才可见——必须常驻渲染。
-3. **lenient 下视觉必须明显区别于 strict**，不能只是换个措辞。建议：lenient 时三处标记加 `--aos-unverified` 描边 + `triangle-alert` 槽图标 + 文案 `LENIENT · evidence gate relaxed`。
+3. **lenient 下视觉必须明显区别于 strict**，不能只是换个措辞。建议：lenient 时三处标记加 `--aos-unverified` 描边 + 语义槽 `gate.lenient` + 文案 `LENIENT · evidence gate relaxed`。
 
 理由：用户若不知道当前跑在 lenient，会把「没被拦截」误读成「有证据支撑」。这类误解一旦发生就摧毁整个产品的可信度。成本是一行常驻文字，收益是避免它。
 
