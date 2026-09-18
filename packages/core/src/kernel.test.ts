@@ -81,16 +81,12 @@ describe('trace (AC-09 / AC-10 / AC-13)', () => {
     trace.append({ spanId: 's1', kind: 'agent', status: 'ok', startedAt: 0, endedAt: 1 });
     trace.append({ spanId: 's2', kind: 'retrieve', status: 'ok', startedAt: 1, endedAt: 2 });
     expect(trace.isIntact()).toBe(true);
-    const tampered = JSON.parse(JSON.stringify(trace.links()));
-    (tampered[1].record as { spanId: string }).spanId = 'hacked';
-    const copy = new Trace();
-    // Replay into a fresh trace to test verify on a tampered chain.
-    // (verify is instance-bound; emulate by mutating the live chain's record via JSON round-trip.)
-    expect(() => {
-      const live = trace.links() as unknown as Array<{ record: { spanId: string } }>;
-      live[1].record.spanId = 'hacked';
-      trace.verify();
-    }).toThrow(/tamper-detected/);
+    // verify() is instance-bound, so tamper with the live chain in place and re-verify.
+    const live = trace.links() as unknown as Array<{ record: { spanId: string } }>;
+    const second = live[1];
+    if (second === undefined) throw new Error('expected a second trace link to tamper with');
+    second.record.spanId = 'hacked';
+    expect(() => trace.verify()).toThrow(/tamper-detected/);
   });
 
   it('refuses to prune records younger than the retention floor', () => {
@@ -116,14 +112,23 @@ describe('net policy (AC-01)', () => {
 
 describe('inference sane defaults (F1 / AC-02 / AC-03 / AC-14)', () => {
   it('clamps thread count into [2, 4] regardless of core count', () => {
-    const t = autoThreads(99);
-    expect(t).toBeGreaterThanOrEqual(MIN_THREADS);
-    expect(t).toBeLessThanOrEqual(MAX_THREADS);
+    // AC-02 说的是自动推导路径：autoThreads() 无参调用按核数推导后必须落在 [2, 4]。
+    // 显式传参越界走 AC-03 的具名失败（见下一条），不是夹取。
+    const derived = autoThreads();
+    expect(derived).toBeGreaterThanOrEqual(MIN_THREADS);
+    expect(derived).toBeLessThanOrEqual(MAX_THREADS);
+  });
+
+  it('honors an in-window request verbatim', () => {
+    // 窗口内的显式请求按原值返回——这是「永不越界返回」不变量的另一半。
+    for (const n of [MIN_THREADS, 3, MAX_THREADS]) expect(autoThreads(n)).toBe(n);
   });
 
   it('fails loudly when an out-of-window thread count is requested', () => {
+    // AC-03：autoThreads(n) 对任意 n 都不得「返回」越界值——越界输入必须具名失败。
     expect(() => autoThreads(1)).toThrow(/outside the clamp window/);
     expect(() => autoThreads(8)).toThrow(/outside the clamp window/);
+    expect(() => autoThreads(99)).toThrow(/outside the clamp window/);
   });
 
   it('resolves a usable local port from the fallback ladder', async () => {

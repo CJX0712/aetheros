@@ -92,7 +92,7 @@
 内联 `<svg style="display:none">` + `<symbol id="i-{name}" viewBox="0 0 24 24">`，引用 `<svg class="aos-icon"><use href="#i-cpu"/></svg>`。
 统一属性：`fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"`，描边宽度按尺寸光学缩放（具体值待图标库裁定后一并定，见 DESIGN.md 待决项）。
 
-> **图标库归属未决（Lucide vs Tabler），本节清单待裁定后填入。** 无论哪家胜出：只内嵌 UI 真正引用到的图标，**不内嵌 `brain` / `sparkles`**——它们是 AI 模板味图标，与「测量仪器」定位冲突。本地推理用 `cpu`，提示响应用 `messages-square`。
+> **图标库已裁定：Tabler Icons 3.46.0（MIT，24×24 / stroke 2），见 ADR-006。** 只内嵌 UI 真正引用到的图标，**不内嵌 `brain` / `sparkles`**——它们是 AI 模板味图标，与「测量仪器」定位冲突。本地推理用 `cpu`，提示响应用 `messages`。
 
 ---
 

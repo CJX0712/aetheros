@@ -73,7 +73,10 @@ function scanGlyphs(file, relPath) {
 
   lines.forEach((text, i) => {
     const lineNo = i + 1;
-    if (!ugc && !optOut) {
+    // P0-1 scopes the emoji-as-icon ban to UI code / design / HTML deliverables.
+    // Documentation prose (markdown) is not a UI functional icon surface, so it is
+    // excluded from the emoji scan; emoji in code/html/css is still enforced.
+    if (isCode && !ugc && !optOut) {
       const hit = EMOJI_RE.exec(text);
       if (hit) {
         add(relPath, lineNo, 'no-emoji', `emoji U+${hit[0].codePointAt(0).toString(16).toUpperCase()} 出现在 UI/文案中`);
@@ -94,6 +97,11 @@ function scanColors(file, relPath) {
 
   lines.forEach((text, i) => {
     const lineNo = i + 1;
+
+    // Token source-of-truth declarations (--aos-*: #hex) are the single place
+    // colour values are allowed to live; usage must go through var(--aos-*).
+    // Skip those lines so the rule targets real usage, not the definition.
+    if (/^\s*--[\w-]+\s*:\s*#/.test(text)) return;
 
     for (const m of text.matchAll(HEX_RE)) {
       const value = m[1];

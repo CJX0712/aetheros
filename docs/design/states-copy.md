@@ -36,7 +36,7 @@
 |---|---|---|---|---|
 | `Grounded` | 已落地 | `--aos-verified` | check | 断言有检索证据支撑 |
 | `Unverified` | 待核验 | `--aos-unverified` | circle-dashed | 证据链不完整，尚未核验 |
-| `No source` | 未落地 / 无据 | `--aos-failed` | triangle-alert | 无证据支撑，strict 模式下已被拦截 |
+| `No source` | 未落地 / 无据 | `--aos-failed` | alert-triangle | 无证据支撑，strict 模式下已被拦截 |
 | `Running` | 运行中 | `--aos-running` | loader | span 正在执行 |
 | `Idle` | 空闲 | `--aos-idle` | circle-dashed | 排队 / 未启动 |
 
@@ -53,7 +53,7 @@
 | **Loading（>3s）** | `Model is loading into memory · qwen2.5-7b-q4_K_M (3.2 GB)` | 细条 meter，无 spinner 遮罩 |
 | **Empty** | 标题 `No runs yet` / 正文 `Start a run and every span will stream here.` / 按钮 `Copy command` → `agentos run "your task"` | `activity` 图标 24px `--aos-muted`，文案左对齐，按钮 primary |
 | **Empty（有过滤器）** | `No runs match this filter` / `Clear filter` 次级按钮 | 同上，无图标插画 |
-| **Error · 模型** | `Model failed to load` / `qwen2.5-7b-q4_K_M not found in ~/.aetheros/models` / 按钮 `Open models` + `Retry` | `triangle-alert` + `--aos-failed`，就近显示在 run 头 |
+| **Error · 模型** | `Model failed to load` / `qwen2.5-7b-q4_K_M not found in ~/.aetheros/models` / 按钮 `Open models` + `Retry` | `alert-triangle` + `--aos-failed`，就近显示在 run 头 |
 | **Error · 工具** | `Tool exited with code 1` / `bash: npm: command not found` / 按钮 `Show full output` | 原始 stderr 用 `--aos-surface-inset` + mono |
 | **Error · 权限** | `Permission denied` / `agentos needs read access to ~/repo/docs` / 按钮 `Grant access` | — |
 | **Error · 超时** | `Run exceeded 120s limit` / 按钮 `Raise limit` + `Retry` | — |
@@ -71,18 +71,20 @@
 | **Loading** | `Searching 4 shards…`（分片数真实计数，不写死） | 骨架 3 行 |
 | **Empty · 索引未建** | 标题 `No index yet` / 正文 `Index a directory and evidence will be traceable to the character.` / 按钮 `Copy command` → `agentos index ./docs` | `file-search` 24px |
 | **Empty · 检索无果** | `No chunks scored above 0.20` / `Lower the threshold` 或 `Reindex` | 阈值数字来自真实配置 |
-| **Error · 索引损坏** | `Index is unreadable` / `vector.idx failed checksum at block 1,204` / 按钮 `Rebuild index` | `triangle-alert` |
+| **Error · 索引损坏** | `Index is unreadable` / `vector.idx failed checksum at block 1,204` / 按钮 `Rebuild index` | `alert-triangle` |
 | **Error · 嵌入模型缺失** | `Embedding model not loaded` / `all-MiniLM-L6-v2 (90 MB) is not in ~/.aetheros/models` / 按钮 `Download` + `Cancel` | 下载按钮明示例外（唯一允许的出站动作，须显式告知） |
-| **Error · 哈希不匹配** | `Source changed since indexing` / `docs/architecture.md differs from sha256:9f3c…` / 按钮 `Show diff` + `Reindex` | `shield-alert` + `--aos-failed` |
+| **Error · 哈希不匹配** | `Source changed since indexing` / `docs/architecture.md differs from sha256:9f3c…` / 按钮 `Show diff` + `Reindex` | `shield-x` + `--aos-failed` |
 | **Populated** | 计数行：`Evidence 7 · Grounded 5 · Unverified 2 · 12 chunks · mean relevance 0.62` | 计数行常驻，是可审计性第一入口 |
 | **Populated · 单条** | `docs/architecture.md #chunk-3` / 摘要句 / `~/repo/docs/architecture.md · 2026-09-18 · sha256:9f3c… · 1284–1402` / `Open source` `Flag misleading` `Copy citation` | 溯源四件套 |
-| **Edge · 低置信** | `Low confidence — all chunks scored below 0.20. Treat this answer as ungrounded.` | `--aos-unverified` + `triangle-alert` + 文字 |
+| **Edge · 低置信** | `Low confidence — all chunks scored below 0.20. Treat this answer as ungrounded.` | `--aos-unverified` + `alert-triangle` + 文字 |
 | **Edge · 超长摘要** | 3 行截断 + `Expand` | `-webkit-line-clamp: 3` |
 
 **状态语义（三通道，颜色永不是唯一信号）**
-- Grounded → `check-check` + `--aos-verified` + 文字 `Grounded`
-- Unverified → `circle-dashed` + `--aos-unverified` + 文字 `Unverified`
-- Ungrounded → `triangle-alert` + `--aos-failed` + 文字 `No source`
+> 图标名必须以 `packages/ui/src/icons.manifest.ts`（P0 唯一图标源，ADR-006 / ADR-014）为准。本表文案与语义先行，图标名如有出入以 manifest 为锁定值。
+
+- Grounded → `check-check` 语义位 → manifest 锁定 `shield-check` + `--aos-verified` + 文字 `Grounded`
+- Unverified → `circle-dashed` 语义位 → manifest 锁定 `shield-question` + `--aos-unverified` + 文字 `Unverified`
+- Ungrounded → `alert-triangle` 语义位 → manifest 锁定 `info-circle` + `--aos-failed` + 文字 `No source`
 
 ---
 

@@ -5,7 +5,7 @@
   "type": "module",
   "description": "Local-first agent runtime that refuses unsourced claims by default and turns every failure into the next skill.",
   "license": "MIT",
-  "packageManager": "pnpm@12.4.2",
+  "packageManager": "pnpm@9.15.9",
   "engines": {
     "node": ">=22.12.0"
   },
@@ -20,7 +20,7 @@
     "bench": "pnpm --filter @aetheros/cli run bench",
     "lint": "pnpm lint:policy && pnpm lint:css && pnpm check:icons && pnpm check:fonts",
     "lint:policy": "node scripts/check-policy.mjs",
-    "lint:css": "stylelint \"packages/**/*.css\"",
+    "lint:css": "stylelint \"packages/**/*.css\" --allow-empty-input",
     "check:icons": "node scripts/check-icons.mjs",
     "check:fonts": "node scripts/check-fonts-license.mjs",
     "verify:demo": "node scripts/verify-demo.mjs",

@@ -4,9 +4,17 @@
 //
 // 硬约束同时校验：viewBox 必须是 0 0 24 24，stroke-width 必须是 2（ICON_STROKE 单一常量）。
 // filled 孪生缺失只告警不失败 —— Tabler filled 覆盖率约 20%，兜底规则尚未关闭（OPEN-DECISION）。
+//
+// 包布局事实（3.46.0，实测）：
+//   icons/outline/*.svg  5130 枚，带 stroke-width="2"
+//   icons/filled/*.svg   1054 枚，与 outline 同名同 basename，用 fill 而非 stroke
+// 两个目录存在 basename 冲突，因此本脚本把两个族分开索引：
+//   - 图标名只在 outline 族解析（manifest 的 name 必须指向描边图标）
+//   - filled 孪生按 filled 族的同名条目判定（不是 `${name}-filled`，那是 React 包的导出命名）
+// 同时兼容后缀式布局（`x-filled.svg`），保持对目录布局不做硬假设。
 
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
-import { basename, join, resolve } from 'node:path';
+import { basename, join, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
@@ -22,9 +30,16 @@ function fail(message) {
   process.exit(1);
 }
 
-/** 递归索引包内所有 .svg -> 绝对路径。不假设任何目录布局 */
+/**
+ * 递归索引包内所有 .svg，按族归类：
+ *   filled 族 = 路径含名为 'filled' 的目录段，或文件名以 '-filled' 结尾
+ *   其余归 outline 族
+ * 返回 { outline: Map<name, path>, filled: Map<name, path> }。
+ * 不假设任何目录布局。
+ */
 function indexIcons(pkgDir) {
-  const index = new Map();
+  const outline = new Map();
+  const filled = new Map();
   const stack = [pkgDir];
   while (stack.length > 0) {
     const dir = stack.pop();
@@ -39,11 +54,17 @@ function indexIcons(pkgDir) {
       if (entry.isDirectory()) {
         if (entry.name !== 'node_modules') stack.push(full);
       } else if (entry.name.endsWith('.svg')) {
-        index.set(basename(entry.name, '.svg'), full);
+        const raw = basename(entry.name, '.svg');
+        const relSegments = full.slice(pkgDir.length).split(sep).filter(Boolean);
+        const inFilledDir = relSegments.slice(0, -1).includes('filled');
+        const hasFilledSuffix = raw.endsWith('-filled');
+        const name = hasFilledSuffix ? raw.slice(0, -'-filled'.length) : raw;
+        if (inFilledDir || hasFilledSuffix) filled.set(name, full);
+        else outline.set(name, full);
       }
     }
   }
-  return index;
+  return { outline, filled };
 }
 
 function levenshtein(a, b) {
@@ -66,8 +87,8 @@ if (!pkgDir) fail('找不到 @tabler/icons，先执行 pnpm install（版本锁�
 
 if (!existsSync(MANIFEST)) fail(`缺少 ${MANIFEST} —— ADR-014 的解析对象不存在`);
 
-const icons = indexIcons(pkgDir);
-if (icons.size === 0) fail(`@tabler/icons 包内未发现任何 .svg（${pkgDir}）`);
+const { outline, filled } = indexIcons(pkgDir);
+if (outline.size === 0) fail(`@tabler/icons 包内未发现任何 outline .svg（${pkgDir}）`);
 
 const manifest = readFileSync(MANIFEST, 'utf8');
 // 只取 `name: '...'` 的值，避免把语义键名误当成图标名
@@ -82,9 +103,10 @@ if (entries.length === 0) fail('icons.manifest.ts 中没有解析到任何 `name
 const unresolved = [];
 const geometry = [];
 for (const { icon, line } of entries) {
-  const file = icons.get(icon);
+  // 图标名只允许指向 outline 族；filled 族仅用于孪生判定
+  const file = outline.get(icon);
   if (!file) {
-    const near = [...icons.keys()]
+    const near = [...outline.keys()]
       .map((n) => ({ n, d: levenshtein(icon, n) }))
       .sort((a, b) => a.d - b.d)
       .slice(0, 3)
@@ -97,7 +119,8 @@ for (const { icon, line } of entries) {
   if (!/stroke-width="2"/.test(svg)) geometry.push(`${icon}: stroke-width 不是 2`);
 }
 
-const missingFilled = filledFlags.filter((n) => !icons.has(`${n}-filled`));
+// filled 孪生：按 filled 族的同名条目判定（兼容旧的后缀命名）
+const missingFilled = filledFlags.filter((n) => !filled.has(n) && !outline.has(`${n}-filled`));
 
 if (unresolved.length > 0) {
   console.error(`[FAIL] icons: ${unresolved.length} 个图标名在 @tabler/icons 3.46.0 中不存在`);
@@ -113,7 +136,9 @@ if (geometry.length > 0) {
   process.exit(1);
 }
 
-console.log(`[PASS] icons: ${entries.length} 个图标名全部解析成功（源 ${icons.size} 枚 SVG）`);
+console.log(
+  `[PASS] icons: ${entries.length} 个图标名全部解析成功（源 ${outline.size} 枚描边 SVG + ${filled.size} 枚 filled 孪生）`,
+);
 if (missingFilled.length > 0) {
   console.log(`[WARN] icons: ${missingFilled.length} 个图标无 filled 孪生，active 态需走兜底规则：${missingFilled.join(', ')}`);
 }

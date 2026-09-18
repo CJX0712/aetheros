@@ -100,7 +100,7 @@ function cmdBench(): void {
   const tokPerSec = seconds > 0 ? tokens / seconds : 0;
   void acc;
 
-  const path = writeProfile({ threads, nBatch, ctx, tokPerSec, measuredAt: new Date().toISOString() });
+  const path = writeProfile({ threads, n_batch: nBatch, ctx, tokPerSec, measuredAt: new Date().toISOString() });
   process.stdout.write(
     `bench: threads=${threads} n_batch=${nBatch} ctx=${ctx} -> ${tokPerSec.toFixed(1)} tok/s\nprofile written: ${path}\n`,
   );
