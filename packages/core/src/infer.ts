@@ -61,6 +61,26 @@ export function readProfile(): InferProfile | null {
   }
 }
 
+export interface ModelResolution {
+  ok: boolean;
+  path: string;
+  /**
+   * True when the failure is transient (e.g. the weights have not been fetched
+   * yet) and the caller may retry. A missing file is NEVER a hard abort.
+   */
+  retryable: boolean;
+  reason?: string;
+}
+
+/**
+ * AC-14: resolve a local model path without aborting. A missing weights file is
+ * a retryable state — the loader stays armed so a later download can satisfy it.
+ */
+export function resolveModel(path: string): ModelResolution {
+  if (existsSync(path)) return { ok: true, path, retryable: false };
+  return { ok: false, path, retryable: true, reason: 'model file not found' };
+}
+
 /** AC-14: pick the first usable port from the fallback ladder. */
 export function resolvePort(preferred: number): Promise<number> {
   const candidates = [preferred, ...FALLBACK_PORTS.filter((p) => p !== preferred)];

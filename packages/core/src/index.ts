@@ -11,11 +11,12 @@ export {
   writeProfile,
   readProfile,
   resolvePort,
+  resolveModel,
   MIN_THREADS,
   MAX_THREADS,
   FALLBACK_PORTS,
 } from './infer.js';
-export type { InferProfile } from './infer.js';
+export type { InferProfile, ModelResolution } from './infer.js';
 export { SkillLineage } from './evolver.js';
 export type { SkillVersion, Experiment } from './evolver.js';
 export { AgentRuntime } from './runtime.js';

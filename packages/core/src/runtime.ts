@@ -82,6 +82,14 @@ export class AgentRuntime {
     return this.threads;
   }
 
+  /**
+   * AC-01: the outbound tally must be inspectable, not merely asserted. Callers
+   * (and the audit bundle) read it after a run to prove the offline baseline.
+   */
+  getNet(): { outbound: number; local: number } {
+    return { outbound: this.net.getOutbound(), local: this.net.getLocal() };
+  }
+
   /** Run a local agent task end to end, recording an append-only trace. */
   async run(input: RunInput): Promise<RunResult> {
     const started = Date.now();

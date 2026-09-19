@@ -26,6 +26,15 @@ function canonical(record: unknown): string {
 export class Trace {
   private chain: HashLink[] = [];
   private seq = 0;
+  /**
+   * Anchor + offset for the surviving segment after a retention prune. Without
+   * these, compaction would make verify() throw on a legitimate log: the new head
+   * would carry a non-null prevHash (its pruned predecessor) and a seq that no
+   * longer starts at 1. The anchor is the last pruned link's hash, so the
+   * surviving chain stays fully verifiable.
+   */
+  private prunedAnchor: string | null = null;
+  private prunedCount = 0;
   readonly retentionDays = RETENTION_DAYS;
 
   /** Append a span. Returns the sealed link; the hash binds to the prev link. */
@@ -41,7 +50,7 @@ export class Trace {
 
   /** Verify integrity. Throws on any linkage / hash / seq break. */
   verify(): void {
-    let prev: string | null = null;
+    let prev: string | null = this.prunedAnchor;
     for (let i = 0; i < this.chain.length; i += 1) {
       const link = this.chain[i]!;
       if (link.prevHash !== prev) {
@@ -51,7 +60,7 @@ export class Trace {
       if (expected !== link.hash) {
         throw new Error(`tamper-detected: hash mismatch at index ${i}`);
       }
-      if (link.seq !== i + 1) {
+      if (link.seq !== this.prunedCount + i + 1) {
         throw new Error(`tamper-detected: seq discontinuity at index ${i}`);
       }
       prev = link.hash;
