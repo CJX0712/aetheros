@@ -1,5 +1,11 @@
 # aetheros
 
+<p align="center">
+  <a href="https://github.com/CJX0712/aetheros/actions/workflows/ci.yml"><img src="https://github.com/CJX0712/aetheros/actions/workflows/ci.yml/badge.svg" alt="ci"></a>
+  <a href="https://github.com/CJX0712/aetheros/releases"><img src="https://img.shields.io/github/v/release/CJX0712/aetheros?sort=semver" alt="release"></a>
+  <img src="https://img.shields.io/badge/author-%E6%99%A8%E6%98%9F-1f6feb" alt="author">
+</p>
+
 本地优先（local-first）的智能体运行时内核。默认**拒绝无来源的断言**，并把每一次失败变成下一次技能修订。
 
 > **拒绝无来源的智能。** 每个断言必须能绑定到证据片段；拒绝低置信度"照样输出"的隐式路径。
