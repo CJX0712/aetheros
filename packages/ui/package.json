@@ -9,6 +9,6 @@
     "check:icons": "node ../../scripts/check-icons.mjs"
   },
   "dependencies": {
-    "@tabler/icons": "3.46.0"
+    "@tabler/icons": "3.47.0"
   }
 }
